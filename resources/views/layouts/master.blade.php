@@ -42,7 +42,7 @@
                     <!-- mini logo for sidebar mini 50x50 pixels -->
                     <span class="logo-mini"><b>I</b>MS</span>
                     <!-- logo for regular state and mobile devices -->
-                    <span class="logo-lg"><b>Inventory</b> System</span>
+                    <span class="logo-lg"><b>5S</b> System</span>
                 </a>
 
                 <!-- Header Navbar -->

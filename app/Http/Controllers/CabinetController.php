@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Cabinet;
-use App\Category;
+use App\Location;
 use App\Drawer;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Datatables;
@@ -24,8 +24,12 @@ class CabinetController extends Controller {
     public function index() {
         $cabinets = Cabinet::with('items')->get();
 
+        // Use pluck to get ['id' => 'name'] format for the dropdown
+        $locations = Location::pluck('name', 'id');
+
         return view('cabinets.index', [
             'cabinets' => $cabinets,
+            'locations' => $locations,
         ]);
     }
 
@@ -52,10 +56,10 @@ class CabinetController extends Controller {
                 'min:2',
                 // Check uniqueness of title WHERE location is the same as input
                 Rule::unique('cabinets')->where(function ($query) use ($request) {
-                    return $query->where('location', $request->location);
+                    return $query->where('location_id', $request->location_id);
                 }),
             ],
-            'location' => 'required|string|min:2'
+            'location_id' => 'required'
         ]);
 
         $request['user_id'] = Auth::id();
@@ -74,10 +78,6 @@ class CabinetController extends Controller {
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id) {
-        $cabinet = Cabinet::with('items', 'drawers')->findOrFail($id);
-        return view('cabinets.show')->compact('cabinet');
-    }
 
     /**
      * Show the form for editing the specified resource.
@@ -105,11 +105,11 @@ class CabinetController extends Controller {
                 'min:2',
                         Rule::unique('cabinets')
                         ->where(function ($query) use ($request) {
-                            return $query->where('location', $request->location);
+                            return $query->where('location_id', $request->location_id);
                         })
                         ->ignore($id), // Ignore the current record
             ],
-            'location' => 'required|string|min:2'
+            'location_id' => 'required'
         ]);
 
         $cabinet = Cabinet::findOrFail($id);
@@ -201,16 +201,31 @@ class CabinetController extends Controller {
         ]);
     }
 
-    public function apiCabinets() {
-        // Only fetch counts for the main list to keep it fast
-        $cabinets = Cabinet::withCount(['items', 'drawers']);
+   public function apiCabinets() {
+    $cabinets = Cabinet::with('location')->withCount('drawers');
 
-        return Datatables::of($cabinets)
-                        ->addColumn('action', function ($cabinet) {
-                            return '<a onclick="editForm(' . $cabinet->id . ')" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i> Edit</a> ' .
-                                    '<a onclick="deleteData(' . $cabinet->id . ')" class="btn btn-danger btn-xs"><i class="fa fa-trash"></i> Delete</a>';
-                        })
-                        ->make(true);
+    return Datatables::of($cabinets)
+        ->addColumn('location', function ($cabinet) {
+            if ($cabinet->location) {
+                return '<span class="label label-info"><i class="fa fa-map-marker"></i> ' . $cabinet->location->name . '</span>';
+            }
+            return '<span class="label label-danger">No Location</span>';
+        })
+        ->addColumn('action', function ($cabinet) {
+            // FIXED: Changed '+' to '.' for PHP string concatenation
+            return '<div class="btn-group">' .
+                   '<a onclick="editForm(' . $cabinet->id . ')" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i> Edit</a> ' .
+                   '<a onclick="deleteData(' . $cabinet->id . ')" class="btn btn-danger btn-xs"><i class="fa fa-trash"></i> Delete</a>' .
+                   '</div>';
+        })
+        ->rawColumns(['location', 'action'])
+        ->make(true);
+}
+
+// Ensure the show method is correct
+    public function show($id) {
+        $cabinet = Cabinet::with('items', 'drawers', 'location')->findOrFail($id);
+        return view('cabinets.show', compact('cabinet')); // Fixed compact syntax
     }
 
 // Fetch the full directory tree for one specific cabinet when expanded

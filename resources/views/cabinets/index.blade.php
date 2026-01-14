@@ -3,53 +3,65 @@
 @section('top')
 <link rel="stylesheet" href="{{ asset('assets/bower_components/datatables.net-bs/css/dataTables.bootstrap.min.css') }}">
 <style>
-    /* Directory Style Toggles */
+    /* Directory Hierarchy Styling */
     td.details-control {
         background: url('https://datatables.net/examples/resources/details_open.png') no-repeat center center;
         cursor: pointer;
+        width: 30px;
     }
     tr.shown td.details-control {
         background: url('https://datatables.net/examples/resources/details_close.png') no-repeat center center;
     }
     .child-table-wrapper {
-        padding: 5px 50px;
-        background: #f9f9f9;
+        padding: 15px 20px 15px 50px;
+        background: #fdfdfd;
+        border-left: 5px solid #00a65a; /* Visual link to parent cabinet */
     }
-    .item-row {
-        color: #555;
-        font-style: italic;
+    .drawer-row:hover {
+        background-color: #f1f1f1 !important;
+    }
+    .item-badge {
+        margin-right: 5px;
+        display: inline-block;
+        margin-bottom: 3px;
+        transition: transform 0.2s;
+    }
+    .item-badge:hover {
+        transform: scale(1.05);
     }
 </style>
 @endsection
 
 @section('content')
 <div class="box box-success">
-    <div class="box-header">
-        <h3 class="box-title"><i class="fa fa-folder-open"></i> Storage Directory (Cabinet > Drawer > Items)</h3>
-        <div class="pull-right">
-            <a onclick="addForm()" class="btn btn-success"><i class="fa fa-plus"></i> Add Cabinet</a>
+    <div class="box-header with-border">
+        <h3 class="box-title"><i class="fa fa-folder-open"></i> Storage Directory</h3>
+        <div class="box-tools pull-right">
+            <button onclick="addForm()" class="btn btn-success btn-sm"><i class="fa fa-plus"></i> Add New Cabinet</button>
         </div>
     </div>
 
     <div class="box-body">
-        <table id="cabinets-table" class="table table-bordered table-hover">
+        <table id="cabinets-table" class="table table-bordered table-hover" style="width:100%">
             <thead>
                 <tr>
-                    <th width="2%"></th> {{-- Toggle Icon --}}
-                    <th width="5%">ID</th>
+                    <th></th> {{-- Toggle Icon --}}
+                    <th width="50px">ID</th>
                     <th>Cabinet Title</th>
                     <th>Location</th>
-                    <th width="15%">Action</th>
+                    <th width="150px">Action</th>
                 </tr>
             </thead>
+            <tbody></tbody>
         </table>
     </div>
 </div>
 
+{{-- Load All Modals --}}
 @include('cabinets.form')
 @include('cabinets.drawer_form') 
 
-@include('cabinets.item_form')
+
 @endsection
 
 @section('bot')
@@ -61,39 +73,48 @@
                 var table;
                 var save_method;
 
-                // 1. Format the "Child Row" (Drawers and Items)
+                // 1. FORMAT NESTED ROWS (Drawers > Items)
                 function format(d) {
-                    var drawerHtml = '<div class="child-table-wrapper" style="padding: 10px 50px; background: #f4f4f4;">' +
+                    var drawerHtml = '<div class="child-table-wrapper">' +
                             '<table class="table table-condensed table-bordered" style="background:#fff">' +
-                            '<thead><tr class="bg-blue"><th>Drawer Name</th><th>Items Inside</th><th width="100px">Action</th></tr></thead>' +
+                            '<thead>' +
+                            '<tr class="bg-blue">' +
+                            '<th width="30%">Drawer Name</th>' +
+                            '<th>Items Inside (Click to view)</th>' +
+                            '<th width="180px">Drawer Actions</th>' +
+                            '</tr>' +
+                            '</thead>' +
                             '<tbody>';
 
-                    if (d.drawers.length === 0) {
-                        drawerHtml += '<tr><td colspan="3" class="text-center">No drawers found in this cabinet.</td></tr>';
-                    }
+                    if (!d.drawers || d.drawers.length === 0) {
+                        drawerHtml += '<tr><td colspan="3" class="text-center text-muted">No drawers found.</td></tr>';
+                    } else {
+                        $.each(d.drawers, function (i, drawer) {
+                            var itemsList = "";
+                            if (drawer.items && drawer.items.length > 0) {
+                                $.each(drawer.items, function (j, item) {
+                                    var itemUrl = "{{ url('items') }}/" + item.id;
+                                    itemsList += '<a href="' + itemUrl + '" target="_blank" class="item-badge">' +
+                                            '<span class="label label-default" style="border:1px solid #ccc; color:#333;">' +
+                                            '<i class="fa fa-tag text-primary"></i> ' + item.name +
+                                            ' <span class="badge bg-blue">' + (item.qty || 0) + '</span>' +
+                                            '</span></a>';
+                                });
+                            }
 
-                    $.each(d.drawers, function (i, drawer) {
-                        var itemsList = "";
-                        $.each(drawer.items, function (j, item) {
-                            // Generate the URL for the show page
-                            var itemUrl = "{{ url('items') }}/" + item.id;
-
-                            itemsList += '<a target="blank" href="' + itemUrl + '" style="text-decoration:none;">' +
-                                    '<small class="label label-default" style="margin-right:5px; display:inline-block; margin-bottom:2px; cursor:pointer;">' +
-                                    '<i class="fa fa-tag"></i> ' + item.name +
-                                    ' <span class="badge bg-blue" style="font-size: 9px; padding: 2px 5px; margin-left: 3px;">' + (item.qty || 0) + '</span>' +
-                                    '</small></a>';
+                            drawerHtml += '<tr class="drawer-row">' +
+                                    '<td><i class="fa fa-folder-o text-yellow"></i> ' + drawer.title + '</td>' +
+                                    '<td>' + (itemsList || '<small class="text-muted">Empty</small>') + '</td>' +
+                                    '<td>' +
+                                    '<div class="btn-group">' +
+                                    '<button onclick="editDrawer(' + drawer.id + ', \'' + drawer.title + '\', ' + d.id + ')" class="btn btn-xs btn-primary"><i class="fa fa-edit"></i></button>' +
+                                    '<button onclick="deleteDrawer(' + drawer.id + ')" class="btn btn-xs btn-danger"><i class="fa fa-trash"></i></button>' +
+                                    '<button onclick="addItemToDrawer(' + drawer.id + ')" class="btn btn-xs btn-default"><i class="fa fa-plus"></i> Item</button>' +
+                                    '</div>' +
+                                    '</td>' +
+                                    '</tr>';
                         });
-
-                        drawerHtml += '<tr>' +
-                                '<td><i class="fa fa-folder-o text-yellow"></i> ' + drawer.title + '</td>' +
-                                '<td>' + (itemsList || '<small class="text-muted">Empty</small>') + '</td>' +
-                                '<td>' +
-                                '<a onclick="editDrawer(' + drawer.id + ', \'' + drawer.title + '\', ' + d.id + ')" class="btn btn-xs btn-primary"><i class="fa fa-edit"></i> Edit</a> ' +
-                                '<a onclick="deleteDrawer(' + drawer.id + ')" class="btn btn-xs btn-danger"><i class="fa fa-trash"></i> Delete</a>' +
-                                '</td>' +
-                                '</tr>';
-                    });
+                    }
 
                     drawerHtml += '</tbody></table>' +
                             '<button class="btn btn-xs btn-success" onclick="addDrawerForm(' + d.id + ')"><i class="fa fa-plus"></i> Add Drawer to ' + d.title + '</button>' +
@@ -103,7 +124,7 @@
                 }
 
                 $(function () {
-                    // Init Main Table
+                    // 2. INITIALIZE MAIN TABLE
                     table = $('#cabinets-table').DataTable({
                         processing: true,
                         serverSide: true,
@@ -124,7 +145,7 @@
                         ]
                     });
 
-                    // Toggle Expand/Collapse
+                    // 3. EXPAND/COLLAPSE LOGIC
                     $('#cabinets-table tbody').on('click', 'td.details-control', function () {
                         var tr = $(this).closest('tr');
                         var row = table.row(tr);
@@ -133,6 +154,7 @@
                             row.child.hide();
                             tr.removeClass('shown');
                         } else {
+                            // Fetch deep data from API
                             $.get("{{ url('api/cabinet-details') }}/" + row.data().id, function (data) {
                                 row.child(format(data)).show();
                                 tr.addClass('shown');
@@ -140,7 +162,7 @@
                         }
                     });
 
-                    // Submit Logic for CABINETS
+                    // 4. SUBMIT CABINET (ADD/EDIT)
                     $('#form-cabinet').validator().on('submit', function (e) {
                         if (!e.isDefaultPrevented()) {
                             var id = $('#id').val();
@@ -165,31 +187,20 @@
                         }
                     });
 
-                    // Submit Logic for DRAWERS
+                    // 5. SUBMIT DRAWER (ADD/EDIT)
                     $('#form-drawer').validator().on('submit', function (e) {
                         if (!e.isDefaultPrevented()) {
                             $.ajax({
                                 url: "{{ route('drawers.store') }}",
                                 type: "POST",
-                                // Use FormData to ensure the _method field is sent correctly
                                 data: new FormData($("#form-drawer")[0]),
                                 contentType: false,
                                 processData: false,
                                 success: function (data) {
                                     $('#modal-drawer-form').modal('hide');
-                                    table.ajax.reload(null, false); // Reload without collapsing rows
+                                    // Use reload(null, false) so current expanded rows stay open
+                                    table.ajax.reload(null, false);
                                     swal({title: 'Success!', text: data.message, type: 'success', timer: '1500'});
-                                },
-                                error: function (data) {
-                                    var errorData = data.responseJSON;
-                                    // Get the first validation error message from Laravel
-                                    var msg = (errorData && errorData.errors) ? Object.values(errorData.errors)[0][0] : 'Something went wrong';
-
-                                    swal({
-                                        title: 'Oops...',
-                                        text: msg,
-                                        type: 'error'
-                                    });
                                 }
                             });
                             return false;
@@ -197,13 +208,13 @@
                     });
                 });
 
-                // --- Cabinet Functions ---
+                // --- CABINET FUNCTIONS ---
                 function addForm() {
                     save_method = "add";
                     $('input[name=_method]').val('POST');
                     $('#modal-form').modal('show');
                     $('#form-cabinet')[0].reset();
-                    $('.modal-title').text('Add Cabinet');
+                    $('.modal-title').text('Add New Cabinet');
                 }
 
                 function editForm(id) {
@@ -218,27 +229,22 @@
                             $('.modal-title').text('Edit Cabinet');
                             $('#id').val(data.id);
                             $('#title').val(data.title);
-                            $('#location').val(data.location);
+                            $('#location_id').val(data.location_id);
                         }
                     });
                 }
 
-                // --- Drawer Functions ---
+                // --- DRAWER FUNCTIONS ---
                 function addDrawerForm(cabinetId) {
                     $('#form-drawer')[0].reset();
-                    $('#drawer_id').val(''); // Clear ID for "Add"
+                    $('#drawer_id').val('');
                     $('#drawer_cabinet_id').val(cabinetId);
                     $('#modal-drawer-form').modal('show');
-                    $('.modal-title').text('Add New Drawer');
+                    $('.modal-title').text('Add Drawer');
                 }
 
                 function editDrawer(id, title, cabinetId) {
-                    save_method = 'edit';
                     $('#form-drawer')[0].reset();
-
-                    // Force method to POST to match your route
-                    $('#form-drawer input[name=_method]').val('POST');
-
                     $('#drawer_id').val(id);
                     $('#drawer_title').val(title);
                     $('#drawer_cabinet_id').val(cabinetId);
@@ -247,21 +253,20 @@
                 }
 
                 function deleteDrawer(id) {
-                    var csrf_token = $('meta[name="csrf-token"]').attr('content');
                     swal({
-                        title: 'Delete this drawer?',
+                        title: 'Delete Drawer?',
+                        text: "This will fail if items are inside!",
                         type: 'warning',
                         showCancelButton: true,
-                        confirmButtonColor: '#d33',
-                        confirmButtonText: 'Yes, delete it!'
+                        confirmButtonText: 'Yes, delete!'
                     }).then(function () {
                         $.ajax({
                             url: "{{ url('drawers') }}/" + id,
                             type: "POST",
-                            data: {'_method': 'DELETE', '_token': csrf_token},
+                            data: {'_method': 'DELETE', '_token': $('meta[name="csrf-token"]').attr('content')},
                             success: function (data) {
-                                table.ajax.reload();
-                                swal({title: 'Deleted!', text: data.message, type: 'success', timer: '1500'});
+                                table.ajax.reload(null, false);
+                                swal({title: 'Deleted!', text: data.message, type: 'success'});
                             },
                             error: function (data) {
                                 swal({title: 'Error', text: data.responseJSON.message, type: 'error'});
@@ -271,24 +276,19 @@
                 }
 
                 function deleteData(id) {
-                    var csrf_token = $('meta[name="csrf-token"]').attr('content');
                     swal({
                         title: 'Delete Cabinet?',
-                        text: "All drawers must be empty!",
                         type: 'warning',
                         showCancelButton: true,
-                        confirmButtonText: 'Yes, delete it!'
+                        confirmButtonText: 'Yes, delete!'
                     }).then(function () {
                         $.ajax({
                             url: "{{ url('cabinets') }}/" + id,
                             type: "POST",
-                            data: {'_method': 'DELETE', '_token': csrf_token},
+                            data: {'_method': 'DELETE', '_token': $('meta[name="csrf-token"]').attr('content')},
                             success: function (data) {
                                 table.ajax.reload();
-                                swal({title: 'Success!', text: data.message, type: 'success', timer: '1500'});
-                            },
-                            error: function (data) {
-                                swal({title: 'Oops...', text: data.responseJSON.message, type: 'error'});
+                                swal({title: 'Success!', text: data.message, type: 'success'});
                             }
                         });
                     });

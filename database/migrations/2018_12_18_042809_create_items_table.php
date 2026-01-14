@@ -24,6 +24,7 @@ class CreateItemsTable extends Migration {
             $table->enum('trackable', ['Yes', 'No'])->default('No');
             $table->string('location')->nullable();
             $table->integer('cabinet_id')->nullable();
+            $table->integer('location_id')->nullable();
             $table->integer('drawer_id')->nullable();
             $table->timestamps();
         });

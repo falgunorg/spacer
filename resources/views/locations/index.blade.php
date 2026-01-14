@@ -11,23 +11,22 @@
 <div class="box box-success">
 
     <div class="box-header">
-        <h3 class="box-title">List of Categories</h3>
+        <h3 class="box-title">List of Locations</h3>
     </div>
 
     <div class="box-header">
-        <a onclick="addForm()" class="btn btn-success" ><i class="fa fa-plus"></i> Add a New Category</a>
-        <a href="{{ route('exportPDF.categoriesAll') }}" class="btn btn-danger"><i class="fa fa-file-pdf-o"></i> Export PDF</a>
-        <a href="{{ route('exportExcel.categoriesAll') }}" class="btn btn-primary"><i class="fa fa-file-excel-o"></i> Export Excel</a>
+        <a onclick="addForm()" class="btn btn-success" ><i class="fa fa-plus"></i> Add a New Location</a>
     </div>
 
 
     <!-- /.box-header -->
     <div class="box-body">
-        <table id="categories-table" class="table table-bordered table-hover table-striped">
+        <table id="locations-table" class="table table-bordered table-hover table-striped">
             <thead>
                 <tr>
                     <th>ID</th>
                     <th>Name</th>
+                    <th>Cabinets</th> 
                     <th>Action</th>
                 </tr>
             </thead>
@@ -37,7 +36,7 @@
     <!-- /.box-body -->
 </div><!-- Log on to codeastro.com for more projects! -->
 
-@include('categories.form')
+@include('locations.form')
 
 @endsection
 
@@ -65,20 +64,26 @@
 {{--</script>--}}
 
 <script type="text/javascript">
-            var table = $('#categories-table').DataTable({
+            var table = $('#locations-table').DataTable({
                 processing: true,
                 serverSide: true,
-                ajax: "{{ route('api.categories') }}",
+                ajax: "{{ route('api.locations') }}",
                 columns: [
                     {data: 'id', name: 'id'},
                     {
                         data: 'name',
                         name: 'name',
-                        // This function merges the Name and the Count
                         render: function (data, type, row) {
-                            return data + ' <span class="label label-info">' + row.items_count + ' Items</span>';
+                            // row.items_count comes from withCount('items') in controller
+                            return data + ' <span class="label label-info">' + (row.items_count || 0) + ' Items</span>';
                         }
                     },
+                    {
+                        data: 'cabinets',
+                        name: 'cabinets',
+                        orderable: false,
+                        searchable: false
+                    }, // New Column Definition
                     {data: 'action', name: 'action', orderable: false, searchable: false}
                 ]
             });
@@ -88,7 +93,7 @@
                 $('input[name=_method]').val('POST');
                 $('#modal-form').modal('show');
                 $('#modal-form form')[0].reset();
-                $('.modal-title').text('Add Categories');
+                $('.modal-title').text('Add Locations');
             }
 
             function editForm(id) {
@@ -96,12 +101,12 @@
                 $('input[name=_method]').val('PATCH');
                 $('#modal-form form')[0].reset();
                 $.ajax({
-                    url: "{{ url('categories') }}" + '/' + id + "/edit",
+                    url: "{{ url('locations') }}" + '/' + id + "/edit",
                     type: "GET",
                     dataType: "JSON",
                     success: function (data) {
                         $('#modal-form').modal('show');
-                        $('.modal-title').text('Edit Categories');
+                        $('.modal-title').text('Edit Locations');
 
                         $('#id').val(data.id);
                         $('#name').val(data.name);
@@ -124,7 +129,7 @@
                     confirmButtonText: 'Yes, delete it!'
                 }).then(function () {
                     $.ajax({
-                        url: "{{ url('categories') }}" + '/' + id,
+                        url: "{{ url('locations') }}" + '/' + id,
                         type: "POST",
                         data: {'_method': 'DELETE', '_token': csrf_token},
                         success: function (data) {
@@ -155,9 +160,9 @@
                     if (!e.isDefaultPrevented()) {
                         var id = $('#id').val();
                         if (save_method == 'add')
-                            url = "{{ url('categories') }}";
+                            url = "{{ url('locations') }}";
                         else
-                            url = "{{ url('categories') . '/' }}" + id;
+                            url = "{{ url('locations') . '/' }}" + id;
 
                         $.ajax({
                             url: url,

@@ -12,8 +12,8 @@ class Cabinet extends Model {
         return $this->belongsTo(User::class);
     }
 
-    public function location() {
-        return $this->Location(User::class);
+  public function location() {
+        return $this->belongsTo(Location::class, 'location_id');
     }
 
     public function drawers() {

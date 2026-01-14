@@ -39,4 +39,7 @@ Route::group(['middleware' => 'auth'], function () {
 // Drawer Routes (Add these)
     Route::post('drawers', 'CabinetController@storeDrawer')->name('drawers.store');
     Route::delete('drawers/{id}', 'CabinetController@deleteDrawer')->name('drawers.destroy');
+
+    Route::resource('locations', 'LocationController');
+    Route::get('/apiLocations', 'LocationController@apiLocations')->name('api.locations');
 });

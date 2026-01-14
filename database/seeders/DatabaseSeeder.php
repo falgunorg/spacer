@@ -31,29 +31,6 @@ class DatabaseSeeder extends Seeder {
             ],
         ]);
 
-        // Category Seeding (IDs will be auto-generated)
-        $categories = [
-            ['name' => 'Electronics'],
-            ['name' => 'Household & Cleanings'],
-            ['name' => 'Clothings'],
-            ['name' => 'Sports & Outdoors'],
-            ['name' => 'Animals & Pet Supplies'],
-            ['name' => 'Arts & Entertainment'],
-            ['name' => 'Luggage & Bags'],
-            ['name' => 'Hardware'],
-            ['name' => 'Cameras & Optics'],
-            ['name' => 'Home & Garden'],
-            ['name' => 'Apparel & Accessories'],
-            ['name' => 'Vehicles & Parts'],
-            ['name' => 'Business & Industrial'],
-        ];
-
-        foreach ($categories as $category) {
-            DB::table('categories')->insert([
-                'name' => $category['name'],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
+       
     }
 }

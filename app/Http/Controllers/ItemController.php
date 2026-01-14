@@ -1,8 +1,6 @@
 <?php
 
 namespace App\Http\Controllers;
-
-use App\Category;
 use App\Item;
 use App\Cabinet;
 use Illuminate\Http\Request;
@@ -10,6 +8,7 @@ use Yajra\DataTables\DataTables;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use App\ItemLog;
+use App\Location;
 
 class ItemController extends Controller {
 
@@ -23,26 +22,22 @@ class ItemController extends Controller {
      * @return \Illuminate\Http\Response
      */
     public function index() {
-        $category = Category::orderBy('name', 'ASC')->pluck('name', 'id');
+        $locations = Location::orderBy('name', 'ASC')->pluck('name', 'id');
         // Fetch cabinets for the dropdown
         $cabinets = Cabinet::orderBy('title', 'ASC')->pluck('title', 'id');
-
-        return view('items.index', compact('category', 'cabinets'));
+        return view('items.index', compact('cabinets', 'locations'));
     }
 
     public function tokens(Request $request) {
         // 1. Start the query (do not use ->get() yet)
-        $query = Item::with(['category', 'user']);
+        $query = Item::with('user');
 
         // 2. Filter by Search / Name
         if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
         }
 
-        // 3. Filter by Category
-        if ($request->filled('category_id')) {
-            $query->where('category_id', $request->category_id);
-        }
+
 
         // 4. Filter by Condition
         if ($request->filled('condition')) {
@@ -52,16 +47,8 @@ class ItemController extends Controller {
         // 5. Execute with Pagination (better for lists)
         $items = $query->latest()->paginate(20);
 
-        // Also fetch categories for the dropdown menu
-        $categories = \App\Category::all();
-
-        return view('items.tokens', compact('items', 'categories'));
+        return view('items.tokens', compact('items'));
     }
-
-//    public function tokens() {
-//        $items = Item::with('category', 'user')->get();
-//        return view('items.tokens', compact('items'));
-//    }
 
     /**
      * Show the form for creating a new resource.
@@ -82,13 +69,9 @@ class ItemController extends Controller {
         // 1. Validation
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
             'qty' => 'required|numeric|min:0',
-            'price' => 'nullable|numeric|min:0',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'description' => 'nullable|string',
-            'condition' => 'nullable|string',
-            'instructions' => 'nullable|string',
             'trackable' => 'required|in:Yes,No',
             'location' => 'required_if:trackable,No|nullable|string',
             'cabinet_id' => 'required_if:trackable,Yes|nullable|exists:cabinets,id',
@@ -136,7 +119,7 @@ class ItemController extends Controller {
      * @return \Illuminate\Http\Response
      */
     public function show($id) {
-        $item = Item::with(['category', 'user', 'cabinet', 'drawer'])->findOrFail($id);
+        $item = Item::with(['user', 'cabinet', 'drawer'])->findOrFail($id);
         return view('items.show', compact('item'));
     }
 
@@ -147,9 +130,9 @@ class ItemController extends Controller {
      * @return \Illuminate\Http\Response
      */
     public function edit($id) {
-        $category = Category::orderBy('name', 'ASC')
-                ->get()
-                ->pluck('name', 'id');
+        $locations = Location::orderBy('title', 'ASC')->pluck('title', 'id');
+        // Fetch cabinets for the dropdown
+        $cabinets = Cabinet::orderBy('title', 'ASC')->pluck('title', 'id');
         $item = Item::find($id);
         return $item;
     }
@@ -165,8 +148,8 @@ class ItemController extends Controller {
         $this->validate($request, [
             'name' => 'required|string|max:255',
             'qty' => 'required|numeric|min:0',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'category_id' => 'required|exists:categories,id',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'description' => 'nullable|string',
             'trackable' => 'required|in:Yes,No',
             'location' => 'required_if:trackable,No|nullable|string',
             'cabinet_id' => 'required_if:trackable,Yes|nullable|exists:cabinets,id',
@@ -225,45 +208,51 @@ class ItemController extends Controller {
     }
 
     public function apiItems() {
-        // Use Eager Loading (with) to speed up the database
-        // Use query() instead of all() for better DataTables performance
-        $items = Item::with(['category', 'user', 'cabinet', 'drawer'])->select('items.*');
+        // Use Eager Loading for performance
+        $items = Item::with(['user', 'cabinet', 'drawer'])
+                ->select('items.*');
 
         return Datatables::of($items)
-                        ->addColumn('category_name', function ($item) {
-                            // Use optional() to prevent crashes if category is missing
-                            return optional($item->category)->name ?? 'Uncategorized';
-                        })
                         ->addColumn('by', function ($item) {
                             return optional($item->user)->name ?? 'System';
                         })
                         ->addColumn('location', function ($item) {
-                            // 1. Check if trackable is Yes
-                            if ($item->trackable == 'Yes') {
-                                $cabinet = $item->cabinet->title ?? 'N/A';
-                                $drawer = $item->drawer->title ?? 'N/A';
-                                return $cabinet . ' [' . $drawer . ']';
+                            // If trackable is Yes, show Cabinet + Drawer
+                            if ($item->trackable === 'Yes') {
+
+                                $cabinetLocation = optional($item->cabinet)->location->title ?? 'N/A';
+                                $cabinetTitle = optional($item->cabinet)->title ?? 'N/A';
+                                $drawerTitle = optional($item->drawer)->title ?? 'N/A';
+
+                                return $cabinetLocation . ' - ' . $cabinetTitle . ' [' . $drawerTitle . ']';
                             }
 
-                            // 2. Return default location if No
-                            return $item->location;
+                            // Otherwise return stored location
+                            return $item->location ?? 'N/A';
                         })
                         ->addColumn('serial_number', function ($item) {
                             return '<a href="' . route('items.show', $item->id) . '" class="btn btn-link btn-xs">'
-                                    . $item->serial_number . '</a>';
+                                    . e($item->serial_number) . '</a>';
                         })
                         ->addColumn('show_photo', function ($item) {
-                            return '<img class="rounded-square" width="50" height="50" src="' . $item->show_photo . '" alt="">';
+                            return '<img class="rounded-square" width="50" height="50" src="'
+                                    . e($item->show_photo) . '" alt="Item Photo">';
                         })
                         ->addColumn('action', function ($item) {
-                            return '<a href="' . route('items.show', $item->id) . '" class="btn btn-info btn-xs">' .
-                                    '<i class="glyphicon glyphicon-eye-open"></i> Show</a> ' .
-                                    '<a onclick="editForm(' . $item->id . ')" class="btn btn-primary btn-xs">' .
-                                    '<i class="glyphicon glyphicon-edit"></i> Edit</a> ' .
-                                    '<a onclick="deleteData(' . $item->id . ')" class="btn btn-danger btn-xs">' .
-                                    '<i class="glyphicon glyphicon-trash"></i> Delete</a>';
+                            return '
+                <a href="' . route('items.show', $item->id) . '" class="btn btn-info btn-xs">
+                    <i class="glyphicon glyphicon-eye-open"></i> Show
+                </a>
+                <a onclick="editForm(' . $item->id . ')" class="btn btn-primary btn-xs">
+                    <i class="glyphicon glyphicon-edit"></i> Edit
+                </a>
+                <a onclick="deleteData(' . $item->id . ')" class="btn btn-danger btn-xs">
+                    <i class="glyphicon glyphicon-trash"></i> Delete
+                </a>
+            ';
                         })
-                        // Combine all raw columns here
+
+                        // Declare HTML columns
                         ->rawColumns(['show_photo', 'action', 'serial_number'])
                         ->make(true);
     }
