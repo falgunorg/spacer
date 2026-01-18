@@ -1,5 +1,9 @@
 @extends('layouts.master')
 
+@section('top')
+<link rel="stylesheet" href="{{ asset('assets/bower_components/datatables.net-bs/css/dataTables.bootstrap.min.css') }}">
+@endsection
+
 @section('content')
 <div class="container-fluid">
     <div class="box box-primary">
@@ -9,25 +13,51 @@
 
         <div class="box-body">
             <form action="{{ route('tokens') }}" method="GET" class="form-inline">
-                <input type="text" name="search" class="form-control" placeholder="Search Item Name..." value="{{ request('search') }}">
+                <input type="text" name="search" class="form-control" placeholder="Search Name or Serial..." value="{{ request('search') }}">
 
-                <select name="category_id" class="form-control">
-                    <option value="">All Categories</option>
-                    @foreach($categories as $cat)
-                    <option value="{{ $cat->id }}" {{ request('category_id') == $cat->id ? 'selected' : '' }}>
-                        {{ $cat->name }}
-                    </option>
-                    @endforeach
+                <select name="item_type" class="form-control">
+                    <option value="">-- All Item Types --</option>
+                    {{-- Garments & Textile Production --}}
+                    <optgroup label="Garments & RMG Production">
+                        <option value="RMG Finished Goods">RMG Finished Goods</option>
+                        <option value="Production Samples">Production Samples (Proto/Fit/Size Set)</option>
+                        <option value="Fabrics">Fabrics (Woven/Knit)</option>
+                        <option value="Pocketing Fabric">Pocketing & Lining Fabric</option>
+                        <option value="Interlining">Interlining & Padding</option>
+                        <option value="Rib/Collar">Rib, Collar & Cuffs</option>
+                    </optgroup>
+
+                    {{-- Trims & Accessories --}}
+                    <optgroup label="Trims & Accessories">
+                        <option value="Sewing Thread">Sewing Thread (Cones)</option>
+                        <option value="Buttons">Buttons (Plastic/Metal/Snap)</option>
+                        <option value="Zippers">Zippers & Sliders</option>
+                        <option value="Labels">Labels (Main/Care/Size)</option>
+                        <option value="Hangtags">Hangtags & Price Tickets</option>
+                        <option value="Elastic">Elastic & Drawstrings</option>
+                        <option value="Poly Bags">Poly Bags & Packaging Material</option>
+                        <option value="Cartons">Empty Cartons / Gum Tapes</option>
+                    </optgroup>
+
+                    {{-- Office & Administrative --}}
+                    <optgroup label="Office Supplies">
+                        <option value="Documents">Legal & Commercial Documents</option>
+                        <option value="Files/Folders">Files & Ring Binders</option>
+                        <option value="General Stationery">General Stationery (Pens/Paper/Staplers)</option>
+                        <option value="Printed Forms">Printed Forms & Logbooks</option>
+                        <option value="Toner/Ink">Printer Toners & Ink Cartridges</option>
+                        <option value="Cleaning/Janitorial">Cleaning & Janitorial Supplies</option>
+                    </optgroup>
+
+                    {{-- IT & Electronics --}}
+                    <optgroup label="IT & Electronics">
+                        <option value="Computer Parts">Computer Parts (RAM/HDD/SSD)</option>
+                        <option value="Peripherals">Peripherals (Mouse/Keyboard/Cables)</option>
+                        <option value="Networking">Networking (Routers/Switches/LAN)</option>
+                        <option value="CCTV">CCTV & Security Equipment</option>
+                    </optgroup>
                 </select>
 
-                <select name="condition" class="form-control">
-                    <option value="">-- All Conditions --</option>
-                    <option value="New" {{ request('condition') == 'New' ? 'selected' : '' }}>New</option>
-                    <option value="Old" {{ request('condition') == 'Old' ? 'selected' : '' }}>Old</option>
-                    <option value="Fresh" {{ request('condition') == 'Fresh' ? 'selected' : '' }}>Fresh</option>
-                    <option value="Fair" {{ request('condition') == 'Fair' ? 'selected' : '' }}>Fair</option>
-                    <option value="Like New" {{ request('condition') == 'Like New' ? 'selected' : '' }}>Like New</option>
-                </select>
                 <button type="submit" class="btn btn-primary">Filter</button>
                 <a href="{{ route('tokens') }}" class="btn btn-default">Reset</a>
             </form>
@@ -36,34 +66,38 @@
             <table id="token-table" class="table table-bordered table-striped">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Item</th> 
+                        <th>Serial</th>
+                        <th>Item Name</th> 
                         <th>Image</th>
-                        <th>Category</th>
-                        <th>Condition</th>
-                        <th>Description</th>
+                        <th>Type</th>
+                        <th>Location Path</th>
                         <th class="text-center">QR Code</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($items as $item)
                     <tr>
-                        <td>#{{ $item->serial_number }}</td>
-                        <td class="item-name-cell"><strong>{{ $item->name }}</strong></td>
+                        <td><span class="badge bg-gray">#{{ $item->serial_number }}</span></td>
+                        <td><strong>{{ $item->name }}</strong></td>
                         <td>
-                            <img src="{{ $item->show_photo }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                            <img src="{{ $item->show_photo }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;">
                         </td>
-                        <td><span class="label label-info">{{ $item->category->name ?? 'N/A' }}</span></td>
-                        <td>{{ $item->condition ?? 'Good' }}</td>
-                        <td style="max-width: 250px;">{{ $item->description }}</td>
+                        <td><span class="label label-info">{{ $item->item_type }}</span></td>
+                        <td>
+                            @if($item->trackable == 'Yes' && $item->cabinet)
+                            <a href="{{ route('locations.show', $item->cabinet->location->id) }}">{{ $item->cabinet->location->name }}</a>
+                            <i class="fa fa-angle-right" style="margin: 0 3px;"></i>
+                            <a href="{{ route('cabinets.show', $item->cabinet->id) }}">{{ $item->cabinet->title }}</a>
+                            <span class="text-muted">[{{ $item->drawer->title ?? 'N/A' }}]</span>
+                            @else
+                            <i class="fa fa-map-marker text-muted"></i> {{ $item->location ?? 'No Location' }}
+                            @endif
+                        </td>
                         <td class="text-center">
-                            {{-- Visible small QR --}}
-                            <div class="qr-container" id="visible-qr-{{ $item->id }}" style="margin-bottom: 5px;">
-                                {!! QrCode::size(60)->generate(route('items.show', $item->id)) !!}
-                                <div style="font-size: 12px; font-weight: bold; text-transform: uppercase;">{{$item->serial_number}}</div>
+                            <div id="visible-qr-{{ $item->id }}">
+                                {!! QrCode::size(55)->generate(route('items.show', $item->id)) !!}
                             </div>
-
-                            <button onclick="downloadQR('{{ $item->id }}', '{{ $item->name }}', '{{ $item->serial_number }}')" class="btn btn-xs btn-default">
+                            <button onclick="downloadQR('{{ $item->id }}', '{{ $item->name }}', '{{ $item->serial_number }}')" class="btn btn-xs btn-default" style="margin-top: 5px;">
                                 <i class="fa fa-download"></i> PNG
                             </button>
                         </td>
@@ -72,104 +106,48 @@
                 </tbody>
             </table>
         </div>
-        <div class="no-print">
+        <div class="box-footer">
             {{ $items->appends(request()->query())->links() }}
         </div>
     </div>
 </div>
+@endsection
 
+@section('bot')
 <script>
-    $(document).ready(function() {
-    // 1. Initialize DataTable
-    var table = $('#token-table').DataTable({
-    "order": [[ 0, "desc" ]],
-            "pageLength": 10,
-            "dom": 'lrtip', // Hides default search box so we can use our custom one
-    });
-    // 2. Custom Name Search
-    $('#search-name').on('keyup', function() {
-    table.column(1).search(this.value).draw();
-    });
-    // 3. Custom Category Filter
-    $('#filter-category').on('change', function() {
-    table.column(3).search(this.value).draw();
-    });
-    // 4. Custom Condition Filter
-    $('#filter-condition').on('change', function() {
-    table.column(4).search(this.value).draw();
-    });
-    });
-    /**
-     * Robust QR Download Function
-     * Fixes the "not working" issue by selecting the SVG directly 
-     * even if the row is hidden by pagination.
-     */
-   function downloadQR(id, name, serial) {
+    function downloadQR(id, name, serial) {
     const qrDiv = document.getElementById(`visible-qr-${id}`);
     const svgElement = qrDiv.querySelector('svg');
-    
-    if (!svgElement) {
-        alert("Error: QR Code not found!");
-        return;
-    }
-
-    const size = 600; // High resolution
-    const clonedSvg = svgElement.cloneNode(true);
-    clonedSvg.setAttribute("width", size);
-    clonedSvg.setAttribute("height", size);
-    
-    const svgData = new XMLSerializer().serializeToString(clonedSvg);
+    if (!svgElement) return;
+    const size = 600;
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     const img = new Image();
+    const svgData = new XMLSerializer().serializeToString(svgElement);
     const svgBlob = new Blob([svgData], {type: "image/svg+xml;charset=utf-8"});
     const url = URL.createObjectURL(svgBlob);
-
     img.onload = function() {
-        canvas.width = size;
-        canvas.height = size;
-
-        // 1. Background
-        ctx.fillStyle = "white";
-        ctx.fillRect(0, 0, size, size);
-
-        // 2. Draw the QR Code
-        ctx.drawImage(img, 0, 0, size, size);
-
-        // 3. Create the "Logo" space in the middle
-        const boxWidth = 160; 
-        const boxHeight = 60;
-        const centerX = (size - boxWidth) / 2;
-        const centerY = (size - boxHeight) / 2;
-
-        // Draw a white rectangle to clear the QR bits behind the text
-        ctx.fillStyle = "white";
-        ctx.roundRect ? ctx.roundRect(centerX, centerY, boxWidth, boxHeight, 10) : ctx.fillRect(centerX, centerY, boxWidth, boxHeight);
-        ctx.fill();
-
-        // Optional: Add a small border around the middle box
-        ctx.strokeStyle = "#eeeeee";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // 4. Draw the Serial Number inside the box
-        ctx.fillStyle = "black";
-        ctx.font = "bold 32px Arial";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(serial, size / 2, size / 2);
-
-        // 5. Download
-        const pngUrl = canvas.toDataURL("image/png");
-        const downloadLink = document.createElement("a");
-        downloadLink.href = pngUrl;
-        downloadLink.download = `${serial}.png`;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-        URL.revokeObjectURL(url);
+    canvas.width = size;
+    canvas.height = size + 120; // Space for text
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Draw QR
+    ctx.drawImage(img, 0, 0, size, size);
+    // Draw Text
+    ctx.fillStyle = "black";
+    ctx.textAlign = "center";
+    ctx.font = "bold 45px Arial";
+    ctx.fillText(serial, size / 2, size + 40);
+    ctx.font = "30px Arial";
+    ctx.fillText(name.substring(0, 35), size / 2, size + 90);
+    const pngUrl = canvas.toDataURL("image/png");
+    const downloadLink = document.createElement("a");
+    downloadLink.href = pngUrl;
+    downloadLink.download = `Token_${serial}.png`;
+    downloadLink.click();
+    URL.revokeObjectURL(url);
     };
     img.src = url;
-}
+    }
 </script>
 @endsection

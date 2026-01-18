@@ -15,4 +15,8 @@ class Location extends Model {
     public function cabinets() {
         return $this->hasMany(Cabinet::class, 'location_id');
     }
+
+    public function items() {
+        return $this->hasMany(Item::class, 'location_id');
+    }
 }

@@ -19,34 +19,34 @@
 
         <ul class="sidebar-menu" data-widget="tree">
 
-
             <li class="{{ Request::is('home*') ? 'active' : '' }}">
                 <a href="{{ url('/home') }}">
                     <i class="fa fa-dashboard"></i> <span>Dashboard</span>
                 </a>
             </li>
-
-
+            <li class="{{ Request::routeIs('item-types.*') ? 'active' : '' }}">
+                <a href="{{ route('item-types.index') }}">
+                    <i class="fa fa-list"></i> <span>Category/Type</span>
+                </a>
+            </li>
             <li class="{{ Request::routeIs('items.*') ? 'active' : '' }}">
                 <a href="{{ route('items.index') }}">
-                    <i class="fa fa-cubes"></i> <span>Item</span>
+                    <i class="fa fa-cubes"></i> <span>Items</span>
                 </a>
             </li>
 
             <li class="{{ Request::routeIs('locations.*') ? 'active' : '' }}">
                 <a href="{{ route('locations.index') }}">
-                    <i class="fa fa-map"></i> <span>Locations</span>
+                    <i class="fa fa-map"></i> <span>Locations/Rooms</span>
                 </a>
             </li>
 
 
             <li class="{{ Request::routeIs('cabinets.*') ? 'active' : '' }}">
                 <a href="{{ route('cabinets.index') }}">
-                    <i class="fa fa-cart-plus"></i> <span>5S</span>
+                    <i class="fa fa-cart-plus"></i> <span>Cabinets</span>
                 </a>
             </li>
-
-
             <hr/>
             <li class="{{ Request::routeIs('user.*') ? 'active' : '' }}">
                 <a href="{{ route('user.index') }}">

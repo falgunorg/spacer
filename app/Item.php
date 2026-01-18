@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Item extends Model {
 
-    protected $fillable = ['name', 'user_id', 'description', 'location', 'image', 'qty', 'location_id', 'cabinet_id', 'drawer_id', 'trackable'];
+    protected $fillable = ['name', 'user_id', 'item_type', 'description', 'location', 'image', 'qty', 'location_id', 'cabinet_id', 'drawer_id', 'trackable'];
     protected $hidden = ['created_at', 'updated_at'];
 
     protected static function booted() {
@@ -31,11 +31,19 @@ class Item extends Model {
         return $this->belongsTo(User::class);
     }
 
+    public function itemLocation() {
+        return $this->belongsTo(Location::class, 'location_id');
+    }
+
     public function cabinet() {
         return $this->belongsTo(Cabinet::class);
     }
 
     public function drawer() {
         return $this->belongsTo(Drawer::class);
+    }
+
+    public function itemType() {
+        return $this->belongsTo(ItemType::class, 'item_type');
     }
 }

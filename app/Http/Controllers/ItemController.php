@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Item;
 use App\Cabinet;
 use Illuminate\Http\Request;
@@ -9,6 +10,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use App\ItemLog;
 use App\Location;
+use App\ItemType;
 
 class ItemController extends Controller {
 
@@ -25,26 +27,28 @@ class ItemController extends Controller {
         $locations = Location::orderBy('name', 'ASC')->pluck('name', 'id');
         // Fetch cabinets for the dropdown
         $cabinets = Cabinet::orderBy('title', 'ASC')->pluck('title', 'id');
-        return view('items.index', compact('cabinets', 'locations'));
+        $item_types = ItemType::orderBy('name', 'ASC')->pluck('name', 'id');
+        return view('items.index', compact('cabinets', 'locations', 'item_types'));
     }
 
     public function tokens(Request $request) {
-        // 1. Start the query (do not use ->get() yet)
-        $query = Item::with('user');
+        // 1. Start the query with necessary relationships for the breadcrumbs
+        $query = Item::with(['user', 'cabinet.location', 'drawer']);
 
-        // 2. Filter by Search / Name
+        // 2. Filter by Search / Name or Serial Number
         if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                        ->orWhere('serial_number', 'like', '%' . $request->search . '%');
+            });
         }
 
-
-
-        // 4. Filter by Condition
-        if ($request->filled('condition')) {
-            $query->where('condition', $request->condition);
+        // 3. Filter by Item Type (The string field)
+        if ($request->filled('item_type')) {
+            $query->where('item_type', $request->item_type);
         }
 
-        // 5. Execute with Pagination (better for lists)
+        // 4. Execute with Pagination
         $items = $query->latest()->paginate(20);
 
         return view('items.tokens', compact('items'));
@@ -66,44 +70,51 @@ class ItemController extends Controller {
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request) {
-        // 1. Validation
-        $validatedData = $request->validate([
+        // 1. Validation Logic
+        $request->validate([
             'name' => 'required|string|max:255',
-            'qty' => 'required|numeric|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'item_type' => 'required|string',
+            'qty' => 'required|numeric|min:1',
             'description' => 'nullable|string',
             'trackable' => 'required|in:Yes,No',
-            'location' => 'required_if:trackable,No|nullable|string',
+            // Permanent Requirement
+            'location_id' => 'required|exists:locations,id',
+            // Conditional Requirements
+            'location' => 'required_if:trackable,No|nullable|string|max:255',
             'cabinet_id' => 'required_if:trackable,Yes|nullable|exists:cabinets,id',
             'drawer_id' => 'required_if:trackable,Yes|nullable|exists:drawers,id',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        // Initialize input with validated data
-        $input = $validatedData;
+        $input = $request->all();
         $input['user_id'] = Auth::id();
 
-        // 2. Optimized Image Handling
+        // 2. Data Integrity Cleanup
+        if ($request->trackable === 'No') {
+            // If not trackable, we only keep location text; clear the IDs
+            $input['cabinet_id'] = null;
+            $input['drawer_id'] = null;
+        } else {
+            // If trackable, we use Cabinet/Drawer; clear the manual text
+            $input['location'] = null;
+        }
+
+        // 3. Image Uploading
         if ($request->hasFile('image')) {
             $file = $request->file('image');
-
-            // Create a unique name: name-timestamp.extension
             $fileName = Str::slug($request->name, '-') . '-' . time() . '.' . $file->getClientOriginalExtension();
-
-            // Move file to public/upload/items
             $file->move(public_path('upload/items'), $fileName);
-
-            // Save only the filename to the database
             $input['image'] = $fileName;
         }
 
-        // 3. Create record (Capture the object in $item)
+        // 4. Create record
         $item = Item::create($input);
 
-        // 4. Create Log (Fixed variable references)
+        // 5. Create Log
         ItemLog::create([
-            'item_id' => $item->id, // Now $item is defined
+            'item_id' => $item->id,
             'user_id' => Auth::id(),
-            'message' => Auth::user()->name . ' Added ' . $item->name, // Fixed Auth::name and title
+            'message' => Auth::user()->name . ' Added ' . $item->name,
         ]);
 
         return response()->json([
@@ -119,7 +130,7 @@ class ItemController extends Controller {
      * @return \Illuminate\Http\Response
      */
     public function show($id) {
-        $item = Item::with(['user', 'cabinet', 'drawer'])->findOrFail($id);
+        $item = Item::with(['user', 'itemLocation', 'cabinet', 'drawer', 'itemType'])->findOrFail($id);
         return view('items.show', compact('item'));
     }
 
@@ -130,7 +141,7 @@ class ItemController extends Controller {
      * @return \Illuminate\Http\Response
      */
     public function edit($id) {
-        $locations = Location::orderBy('title', 'ASC')->pluck('title', 'id');
+        $locations = Location::orderBy('name', 'ASC')->pluck('name', 'id');
         // Fetch cabinets for the dropdown
         $cabinets = Cabinet::orderBy('title', 'ASC')->pluck('title', 'id');
         $item = Item::find($id);
@@ -145,36 +156,59 @@ class ItemController extends Controller {
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request, $id) {
-        $this->validate($request, [
+        $item = Item::findOrFail($id);
+
+        // 1. Validation Logic (Matches Store)
+        $request->validate([
             'name' => 'required|string|max:255',
+            'item_type' => 'required|string',
             'qty' => 'required|numeric|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'description' => 'nullable|string',
             'trackable' => 'required|in:Yes,No',
-            'location' => 'required_if:trackable,No|nullable|string',
+            // Permanent Requirement
+            'location_id' => 'required|exists:locations,id',
+            // Conditional Requirements
+            'location' => 'required_if:trackable,No|nullable|string|max:255',
             'cabinet_id' => 'required_if:trackable,Yes|nullable|exists:cabinets,id',
             'drawer_id' => 'required_if:trackable,Yes|nullable|exists:drawers,id',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'description' => 'nullable|string',
         ]);
 
-        $item = Item::findOrFail($id);
-        $input = $request->except('image');
+        $input = $request->all();
 
-        if ($request->hasFile('image')) {
-            // 1. Delete old image if it exists
-            // We use trim to ensure no leading slashes cause issues with public_path()
-            if ($item->image && file_exists(public_path(trim($item->image, '/')))) {
-                unlink(public_path(trim($item->image, '/')));
-            }
-
-            // 2. Prepare new image
-            $fileName = Str::slug($request->name) . '-' . time() . '.' . $request->image->getClientOriginalExtension();
-            $request->image->move(public_path('upload/items'), $fileName);
-
-            // 3. Save relative path (standard practice)
-            $input['image'] = 'upload/items/' . $fileName;
+        // 2. Data Integrity Cleanup
+        if ($request->trackable === 'No') {
+            $input['cabinet_id'] = null;
+            $input['drawer_id'] = null;
+        } else {
+            $input['location'] = null;
         }
 
+        // 3. Image Uploading
+        if ($request->hasFile('image')) {
+            // Delete old image if exists
+            if ($item->image && file_exists(public_path('upload/items/' . $item->image))) {
+                @unlink(public_path('upload/items/' . $item->image));
+            }
+
+            $file = $request->file('image');
+            $fileName = Str::slug($request->name, '-') . '-' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('upload/items'), $fileName);
+            $input['image'] = $fileName;
+        } else {
+            // Keep existing image if no new file is uploaded
+            $input['image'] = $item->image;
+        }
+
+        // 4. Update record
         $item->update($input);
+
+        // 5. Create Log
+        ItemLog::create([
+            'item_id' => $item->id,
+            'user_id' => Auth::id(),
+            'message' => Auth::user()->name . ' Updated ' . $item->name,
+        ]);
 
         return response()->json([
                     'success' => true,
@@ -207,53 +241,133 @@ class ItemController extends Controller {
         ]);
     }
 
-    public function apiItems() {
-        // Use Eager Loading for performance
-        $items = Item::with(['user', 'cabinet', 'drawer'])
-                ->select('items.*');
+    public function apiItemsORIGIN() {
+        // Eager load itemLocation (the relationship), cabinet, and drawer
+        $items = Item::with(['user', 'itemLocation', 'cabinet', 'drawer'])->select('items.*');
 
         return Datatables::of($items)
                         ->addColumn('by', function ($item) {
                             return optional($item->user)->name ?? 'System';
                         })
                         ->addColumn('location', function ($item) {
-                            // If trackable is Yes, show Cabinet + Drawer
-                            if ($item->trackable === 'Yes') {
+                            $html = '<i class="fa fa-map-marker text-muted"></i> ';
 
-                                $cabinetLocation = optional($item->cabinet)->location->title ?? 'N/A';
-                                $cabinetTitle = optional($item->cabinet)->title ?? 'N/A';
-                                $drawerTitle = optional($item->drawer)->title ?? 'N/A';
-
-                                return $cabinetLocation . ' - ' . $cabinetTitle . ' [' . $drawerTitle . ']';
+                            // 1. Base Location (Always Required)
+                            if ($item->itemLocation) {
+                                $html .= '<a href="' . route('locations.show', $item->itemLocation->id) . '">' . e($item->itemLocation->name) . '</a>';
+                            } else {
+                                $html .= '<span class="text-muted">No Location</span>';
                             }
 
-                            // Otherwise return stored location
-                            return $item->location ?? 'N/A';
+                            // 2. Sub-Location logic
+                            if ($item->trackable === 'Yes') {
+                                // Trackable Path: Site > Cabinet > Drawer
+                                if ($item->cabinet) {
+                                    $html .= ' <i class="fa fa-angle-right" style="margin:0 2px;"></i> ';
+                                    $html .= '<a href="' . route('cabinets.show', $item->cabinet->id) . '">' . e($item->cabinet->title) . '</a>';
+                                }
+                                if ($item->drawer) {
+                                    $html .= ' <i class="fa fa-angle-right" style="margin:0 2px;"></i> ';
+                                    $html .= '<span class="text-muted">' . e($item->drawer->title) . '</span>';
+                                }
+                            } else {
+                                // Manual Path: Site > General Text
+                                if ($item->location) {
+                                    $html .= ' <i class="fa fa-angle-right" style="margin:0 2px;"></i> ';
+                                    $html .= '<span class="text-muted"><em>' . e($item->location) . '</em></span>';
+                                }
+                            }
+
+                            return $html;
                         })
                         ->addColumn('serial_number', function ($item) {
                             return '<a href="' . route('items.show', $item->id) . '" class="btn btn-link btn-xs">'
                                     . e($item->serial_number) . '</a>';
                         })
                         ->addColumn('show_photo', function ($item) {
-                            return '<img class="rounded-square" width="50" height="50" src="'
-                                    . e($item->show_photo) . '" alt="Item Photo">';
+                            return '<img class="img-thumbnail" width="50" src="' . $item->show_photo . '" alt="Photo">';
                         })
                         ->addColumn('action', function ($item) {
                             return '
-                <a href="' . route('items.show', $item->id) . '" class="btn btn-info btn-xs">
-                    <i class="glyphicon glyphicon-eye-open"></i> Show
-                </a>
-                <a onclick="editForm(' . $item->id . ')" class="btn btn-primary btn-xs">
-                    <i class="glyphicon glyphicon-edit"></i> Edit
-                </a>
-                <a onclick="deleteData(' . $item->id . ')" class="btn btn-danger btn-xs">
-                    <i class="glyphicon glyphicon-trash"></i> Delete
-                </a>
+                <a href="' . route('items.show', $item->id) . '" class="btn btn-info btn-xs"><i class="glyphicon glyphicon-eye-open"></i></a>
+                <a onclick="editForm(' . $item->id . ')" class="btn btn-primary btn-xs"><i class="glyphicon glyphicon-edit"></i></a>
+                <a onclick="deleteData(' . $item->id . ')" class="btn btn-danger btn-xs"><i class="glyphicon glyphicon-trash"></i></a>
             ';
                         })
-
-                        // Declare HTML columns
-                        ->rawColumns(['show_photo', 'action', 'serial_number'])
+                        // IMPORTANT: Add 'location' to rawColumns so the HTML/Icons render correctly
+                        ->rawColumns(['show_photo', 'action', 'serial_number', 'location'])
                         ->make(true);
+    }
+
+    public function apiItems() {
+        // 1. Added 'itemType' to the eager loading list
+        $items = Item::with(['user', 'itemLocation', 'cabinet', 'drawer', 'itemType'])->select('items.*');
+
+        return Datatables::of($items)
+                        ->addColumn('by', function ($item) {
+                            return optional($item->user)->name ?? 'System';
+                        })
+                        // 2. Added the Item Type column logic
+                        ->addColumn('item_type', function ($item) {
+                            return optional($item->itemType)->name ?? '<span class="label label-default">N/A</span>';
+                        })
+                        ->addColumn('location', function ($item) {
+                            $html = '<i class="fa fa-map-marker text-muted"></i> ';
+
+                            // Base Location
+                            if ($item->itemLocation) {
+                                $html .= '<a href="' . route('locations.show', $item->itemLocation->id) . '">' . e($item->itemLocation->name) . '</a>';
+                            } else {
+                                $html .= '<span class="text-muted">No Location</span>';
+                            }
+
+                            // Sub-Location logic
+                            if ($item->trackable === 'Yes') {
+                                if ($item->cabinet) {
+                                    $html .= ' <i class="fa fa-angle-right" style="margin:0 2px;"></i> ';
+                                    $html .= '<a href="' . route('cabinets.show', $item->cabinet->id) . '">' . e($item->cabinet->title) . '</a>';
+                                }
+                                if ($item->drawer) {
+                                    $html .= ' <i class="fa fa-angle-right" style="margin:0 2px;"></i> ';
+                                    $html .= '<span class="text-muted">' . e($item->drawer->title) . '</span>';
+                                }
+                            } else {
+                                if ($item->location) {
+                                    $html .= ' <i class="fa fa-angle-right" style="margin:0 2px;"></i> ';
+                                    $html .= '<span class="text-muted"><em>' . e($item->location) . '</em></span>';
+                                }
+                            }
+                            return $html;
+                        })
+                        ->addColumn('serial_number', function ($item) {
+                            return '<a href="' . route('items.show', $item->id) . '" class="btn btn-link btn-xs">'
+                                    . e($item->serial_number) . '</a>';
+                        })
+                        ->addColumn('show_photo', function ($item) {
+                            return '<img class="img-thumbnail" width="50" src="' . $item->show_photo . '" alt="Photo">';
+                        })
+                        ->addColumn('action', function ($item) {
+                            return '
+                <a href="' . route('items.show', $item->id) . '" class="btn btn-info btn-xs"><i class="glyphicon glyphicon-eye-open"></i></a>
+                <a onclick="editForm(' . $item->id . ')" class="btn btn-primary btn-xs"><i class="glyphicon glyphicon-edit"></i></a>
+                <a onclick="deleteData(' . $item->id . ')" class="btn btn-danger btn-xs"><i class="glyphicon glyphicon-trash"></i></a>
+            ';
+                        })
+                        // 3. Added 'item_type' to rawColumns in case you use labels/html
+                        ->rawColumns(['show_photo', 'action', 'serial_number', 'location', 'item_type'])
+                        ->make(true);
+    }
+
+    public function getCabinets($location_id) {
+        // Assuming Cabinet model has a 'location_id' foreign key
+        $cabinets = Cabinet::where('location_id', $location_id)->orderBy('title', 'ASC')->get(['id', 'title']);
+        return response()->json($cabinets);
+    }
+
+    public function getDrawers($cabinet_id) {
+        // Assuming Drawer model has a 'cabinet_id' foreign key
+        // Replace 'App\Drawer' with your actual Drawer model path
+        $drawers = \App\Drawer::where('cabinet_id', $cabinet_id)->orderBy('title', 'ASC')->get(['id', 'title']);
+        return response()->json($drawers);
     }
 }

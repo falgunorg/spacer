@@ -60,7 +60,13 @@ class LocationController extends Controller {
      * @return \Illuminate\Http\Response
      */
     public function show($id) {
-        //
+        // Eager load cabinets and their drawers, and the items in those drawers
+        // Also load items that are assigned to this location directly (Trackable = No)
+        $location = Location::with(['cabinets.drawers.items', 'items' => function ($query) {
+//                        $query->where('trackable', 'No');
+                    }])->findOrFail($id);
+
+        return view('locations.show', compact('location'));
     }
 
     /**
@@ -126,38 +132,27 @@ class LocationController extends Controller {
     }
 
     public function apiLocations() {
-        // Eager load cabinets and items count
-        $locations = Location::with('cabinets')->get();
+        // Eager load cabinets and count items
+        // Added withCount('items') so row.items_count works in your JS
+        $locations = Location::with('cabinets')->withCount('items')->get();
 
         return Datatables::of($locations)
                         ->addColumn('cabinets', function ($location) {
                             $links = [];
                             foreach ($location->cabinets as $cabinet) {
-                                // Assuming your route is named 'cabinets.show'
                                 $url = route('cabinets.show', $cabinet->id);
-                                $links[] = '<a href="' . $url . '" class="label label-warning">' . $cabinet->name . '</a>';
+                                // CHANGE: Use $cabinet->title (or whatever your column name is)
+                                $label = e($cabinet->title ?: 'Unnamed Cabinet');
+                                $links[] = '<a href="' . $url . '" class="label label-warning">' . $label . '</a>';
                             }
-                            // Join all links with a space or comma
                             return implode(' ', $links);
                         })
                         ->addColumn('action', function ($location) {
-                            return '<a onclick="editForm(' . $location->id . ')" class="btn btn-primary btn-xs"><i class="glyphicon glyphicon-edit"></i> Edit</a> ' .
+                            return '<a href="' . route('locations.show', $location->id) . '" class="btn btn-info btn-xs"><i class="glyphicon glyphicon-eye-open"></i> Show</a> ' .
+                                    '<a onclick="editForm(' . $location->id . ')" class="btn btn-primary btn-xs"><i class="glyphicon glyphicon-edit"></i> Edit</a> ' .
                                     '<a onclick="deleteData(' . $location->id . ')" class="btn btn-danger btn-xs"><i class="glyphicon glyphicon-trash"></i> Delete</a>';
                         })
-                        ->rawColumns(['cabinets', 'action']) // Ensure 'cabinets' is treated as HTML
-                        ->make(true);
-    }
-
-    public function apiLocationsORIGIN() {
-        // withCount('items') adds a 'items_count' attribute to each location
-        $locations = Location::with('cabinets')->get();
-
-        return Datatables::of($locations)
-                        ->addColumn('action', function ($locations) {
-                            return '<a onclick="editForm(' . $locations->id . ')" class="btn btn-primary btn-xs"><i class="glyphicon glyphicon-edit"></i> Edit</a> ' .
-                                    '<a onclick="deleteData(' . $locations->id . ')" class="btn btn-danger btn-xs"><i class="glyphicon glyphicon-trash"></i> Delete</a>';
-                        })
-                        ->rawColumns(['action'])
+                        ->rawColumns(['cabinets', 'action'])
                         ->make(true);
     }
 }

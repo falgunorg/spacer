@@ -25,6 +25,10 @@ Route::get('dashboard', function () {
 
 Route::group(['middleware' => 'auth'], function () {
 
+
+    Route::resource('item-types', 'ItemTypeController');
+    Route::get('/api/item-types', 'ItemTypeController@apiItemTypes')->name('api.item_types');
+
     Route::resource('items', 'ItemController');
     Route::get('/apiItems', 'ItemController@apiItems')->name('api.items');
     Route::get('/tokens', 'ItemController@tokens')->name('tokens');
@@ -42,4 +46,7 @@ Route::group(['middleware' => 'auth'], function () {
 
     Route::resource('locations', 'LocationController');
     Route::get('/apiLocations', 'LocationController@apiLocations')->name('api.locations');
+
+    Route::get('api/cabinets-by-location/{id}', 'ItemController@getCabinets');
+    Route::get('api/drawers-by-cabinet/{id}', 'ItemController@getDrawers');
 });

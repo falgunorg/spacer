@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Yajra\DataTables\Datatables;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use App\ItemType;
 
 class CabinetController extends Controller {
 
@@ -78,6 +80,20 @@ class CabinetController extends Controller {
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
+    public function show($id) {
+        // Eager load drawers and the items within those drawers
+        $cabinet = Cabinet::with(['location', 'drawers.items'])->findOrFail($id);
+
+        // 2. Generate the QR Code for the current URL
+        // size(150) sets the dimensions, margin(1) removes excess white space
+        $qrcode = QrCode::size(150)
+                ->margin(1)
+                ->generate(url()->current());
+        $item_types = ItemType::orderBy('name', 'ASC')->pluck('name', 'id');
+
+        // 3. Pass the $qrcode variable to the view
+        return view('cabinets.show', compact('cabinet', 'qrcode', 'item_types'));
+    }
 
     /**
      * Show the form for editing the specified resource.
@@ -201,31 +217,26 @@ class CabinetController extends Controller {
         ]);
     }
 
-   public function apiCabinets() {
-    $cabinets = Cabinet::with('location')->withCount('drawers');
+    public function apiCabinets() {
+        $cabinets = Cabinet::with('location')->withCount('drawers');
 
-    return Datatables::of($cabinets)
-        ->addColumn('location', function ($cabinet) {
-            if ($cabinet->location) {
-                return '<span class="label label-info"><i class="fa fa-map-marker"></i> ' . $cabinet->location->name . '</span>';
-            }
-            return '<span class="label label-danger">No Location</span>';
-        })
-        ->addColumn('action', function ($cabinet) {
-            // FIXED: Changed '+' to '.' for PHP string concatenation
-            return '<div class="btn-group">' .
-                   '<a onclick="editForm(' . $cabinet->id . ')" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i> Edit</a> ' .
-                   '<a onclick="deleteData(' . $cabinet->id . ')" class="btn btn-danger btn-xs"><i class="fa fa-trash"></i> Delete</a>' .
-                   '</div>';
-        })
-        ->rawColumns(['location', 'action'])
-        ->make(true);
-}
-
-// Ensure the show method is correct
-    public function show($id) {
-        $cabinet = Cabinet::with('items', 'drawers', 'location')->findOrFail($id);
-        return view('cabinets.show', compact('cabinet')); // Fixed compact syntax
+        return Datatables::of($cabinets)
+                        ->addColumn('location', function ($cabinet) {
+                            if ($cabinet->location) {
+                                return '<span class="label label-info"><i class="fa fa-map-marker"></i> ' . $cabinet->location->name . '</span>';
+                            }
+                            return '<span class="label label-danger">No Location</span>';
+                        })
+                        ->addColumn('action', function ($cabinet) {
+                            // FIXED: Changed '+' to '.' for PHP string concatenation
+                            return '<div class="">' .
+                                    '<a href="' . route('cabinets.show', $cabinet->id) . '" class="btn btn-info btn-xs"><i class="glyphicon glyphicon-eye-open"></i></a> ' .
+                                    '<a onclick="editForm(' . $cabinet->id . ')" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i> </a> ' .
+                                    '<a onclick="deleteData(' . $cabinet->id . ')" class="btn btn-danger btn-xs"><i class="fa fa-trash"></i> </a>' .
+                                    '</div>';
+                        })
+                        ->rawColumns(['location', 'action'])
+                        ->make(true);
     }
 
 // Fetch the full directory tree for one specific cabinet when expanded

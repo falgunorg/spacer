@@ -27,48 +27,12 @@
                             <div class="col-lg-6">
                                 <div class="form-group">
                                     <label>Item Type</label>
-                                    <select class="form-control" id="type" name="type" required>
+                                    <select class="form-control" id="item_type" name="item_type" required>
                                         <option value="" selected disabled>-- Select Item Category --</option>
 
-                                        {{-- Garments & Textile Production --}}
-                                        <optgroup label="Garments & RMG Production">
-                                            <option value="RMG Finished Goods">RMG Finished Goods</option>
-                                            <option value="Production Samples">Production Samples (Proto/Fit/Size Set)</option>
-                                            <option value="Fabrics">Fabrics (Woven/Knit)</option>
-                                            <option value="Pocketing Fabric">Pocketing & Lining Fabric</option>
-                                            <option value="Interlining">Interlining & Padding</option>
-                                            <option value="Rib/Collar">Rib, Collar & Cuffs</option>
-                                        </optgroup>
-
-                                        {{-- Trims & Accessories --}}
-                                        <optgroup label="Trims & Accessories">
-                                            <option value="Sewing Thread">Sewing Thread (Cones)</option>
-                                            <option value="Buttons">Buttons (Plastic/Metal/Snap)</option>
-                                            <option value="Zippers">Zippers & Sliders</option>
-                                            <option value="Labels">Labels (Main/Care/Size)</option>
-                                            <option value="Hangtags">Hangtags & Price Tickets</option>
-                                            <option value="Elastic">Elastic & Drawstrings</option>
-                                            <option value="Poly Bags">Poly Bags & Packaging Material</option>
-                                            <option value="Cartons">Empty Cartons / Gum Tapes</option>
-                                        </optgroup>
-
-                                        {{-- Office & Administrative --}}
-                                        <optgroup label="Office Supplies">
-                                            <option value="Documents">Legal & Commercial Documents</option>
-                                            <option value="Files/Folders">Files & Ring Binders</option>
-                                            <option value="General Stationery">General Stationery (Pens/Paper/Staplers)</option>
-                                            <option value="Printed Forms">Printed Forms & Logbooks</option>
-                                            <option value="Toner/Ink">Printer Toners & Ink Cartridges</option>
-                                            <option value="Cleaning/Janitorial">Cleaning & Janitorial Supplies</option>
-                                        </optgroup>
-
-                                        {{-- IT & Electronics --}}
-                                        <optgroup label="IT & Electronics">
-                                            <option value="Computer Parts">Computer Parts (RAM/HDD/SSD)</option>
-                                            <option value="Peripherals">Peripherals (Mouse/Keyboard/Cables)</option>
-                                            <option value="Networking">Networking (Routers/Switches/LAN)</option>
-                                            <option value="CCTV">CCTV & Security Equipment</option>
-                                        </optgroup>
+                                        @foreach($item_types as $id => $name)
+                                        <option value="{{ $id }}">{{ $name }}</option>
+                                        @endforeach
                                     </select>
                                     <span class="help-block with-errors"></span>
                                 </div>
@@ -86,6 +50,18 @@
                                     <label>Description</label>
                                     <textarea class="form-control" id="description" name="description" rows="3"></textarea>
                                     <span class="help-block with-errors"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label>Location</label>
+                                    <select class="form-control" id="location_id" name="location_id">
+                                        <option value="" selected disabled>-- Select Location --</option>
+                                        @foreach($locations as $id => $name)
+                                        <option value="{{ $id }}">{{ $name }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                             </div>
 
@@ -109,25 +85,12 @@
                             <div class="col-lg-12">
                                 <div id="storage_group" style="display:none;">
                                     <div class="row">
-                                        <div class="col-lg-12">
-                                            <div class="form-group">
-                                                <label>Location</label>
-                                                <select class="form-control" id="location_id" name="location_id">
-                                                    <option value="" selected disabled>-- Select Location --</option>
-                                                    @foreach($locations as $id => $name)
-                                                    <option value="{{ $id }}">{{ $name }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                        </div>
+
                                         <div class="col-lg-6">
                                             <div class="form-group">
                                                 <label>Cabinet</label>
                                                 <select class="form-control" id="cabinet_id" name="cabinet_id">
-                                                    <option value="" selected disabled>-- Select Cabinet --</option>
-                                                    @foreach($cabinets as $id => $title)
-                                                    <option value="{{ $id }}">{{ $title }}</option>
-                                                    @endforeach
+                                                    <option value="" selected disabled>-- Select Location First --</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -150,25 +113,6 @@
                                 </div>
                             </div>
                         </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                     </div>
                 </div>
 

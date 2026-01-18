@@ -81,14 +81,45 @@
                 <div class="col-md-8">
                     <table class="table table-bordered">
                         <tr><th>Name</th><td>{{ $item->name }}</td></tr>
-                        <tr><th>Category</th><td>{{ $item->category->name ?? 'N/A' }}</td></tr>
+                        <tr><th>Category</th><td>{{ $item->itemType->name ?? 'N/A' }}</td></tr>
                         <tr><th>Quantity</th><td>{{ $item->qty }}</td></tr>
-                        <tr><th>Location</th><td>
-                                {{ $item->trackable == 'Yes' 
-        ? ($item->cabinet->title ?? 'N/A') . ' [' . ($item->drawer->title ?? 'N/A') . ']' 
-        : $item->location 
-                                }}
-                            </td></tr>
+                        <tr>
+                            <th>Location</th>
+                            <td>
+                                <i class="fa fa-map-marker text-muted"></i>
+
+                                {{-- 1. Base Location (Always Required) --}}
+                                @if($item->itemLocation)
+                                <a href="{{ route('locations.show', $item->itemLocation->id) }}">
+                                    {{ $item->itemLocation->name }}
+                                </a>
+                                @else
+                                <span class="text-muted">No Location</span>
+                                @endif
+
+                                {{-- 2. Display Sub-Location based on Trackable status --}}
+                                @if($item->trackable == 'Yes')
+                                {{-- Trackable Path: Location > Cabinet > Drawer --}}
+                                @if($item->cabinet)
+                                <i class="fa fa-angle-right" style="margin: 0 5px;"></i>
+                                <a href="{{ route('cabinets.show', $item->cabinet->id) }}">
+                                    {{ $item->cabinet->title }}
+                                </a>
+                                @endif
+
+                                @if($item->drawer)
+                                <i class="fa fa-angle-right" style="margin: 0 5px;"></i>
+                                <span class="label label-default">{{ $item->drawer->title }}</span>
+                                @endif
+                                @else
+                                {{-- Manual Path: Location > General Text --}}
+                                @if($item->location)
+                                <i class="fa fa-angle-right" style="margin: 0 5px;"></i>
+                                <span class="text-muted"><em>{{ $item->location }}</em></span>
+                                @endif
+                                @endif
+                            </td>
+                        </tr>
                         {{-- ADD ALL YOUR OTHER EXTRA INFO HERE --}}
                         <tr><th>Description</th><td>{{ $item->description ?? 'No description' }}</td></tr>
                         <tr><th>Created At</th><td>{{ $item->created_at }}</td></tr>
@@ -102,7 +133,7 @@
         <div class="box-body" style="padding: 5px;">
             <div class="text-center" style="margin-bottom: 8px; border-bottom: 1px dashed #ccc; padding-bottom: 5px;">
                 <h4 style="margin:0; font-size: 14px; font-weight:bold;">{{ $item->name }}</h4>
-                <small>{{ $item->category->name ?? 'General' }}</small>
+                <small>{{ $item->itemType->name ?? 'General' }}</small>
             </div>
 
             <div class="row">
@@ -119,10 +150,38 @@
                         <tr>
                             <th>Location:</th>
                             <td>
-                                {{ $item->trackable == 'Yes' 
-        ? ($item->cabinet->title ?? 'N/A') . ' [' . ($item->drawer->title ?? 'N/A') . ']' 
-        : $item->location 
-                                }}
+                                <i class="fa fa-map-marker text-muted"></i>
+
+                                {{-- 1. Base Location (Always Required) --}}
+                                @if($item->itemLocation)
+
+                                {{ $item->itemLocation->name }}
+
+                                @else
+                                <span class="text-muted">No Location</span>
+                                @endif
+
+                                {{-- 2. Display Sub-Location based on Trackable status --}}
+                                @if($item->trackable == 'Yes')
+                                {{-- Trackable Path: Location > Cabinet > Drawer --}}
+                                @if($item->cabinet)
+                                <i class="fa fa-angle-right" style="margin: 0 5px;"></i>
+
+                                {{ $item->cabinet->title }}
+
+                                @endif
+
+                                @if($item->drawer)
+                                <i class="fa fa-angle-right" style="margin: 0 5px;"></i>
+                                <span class="label label-default">{{ $item->drawer->title }}</span>
+                                @endif
+                                @else
+                                {{-- Manual Path: Location > General Text --}}
+                                @if($item->location)
+                                <i class="fa fa-angle-right" style="margin: 0 5px;"></i>
+                                <span class="text-muted"><em>{{ $item->location }}</em></span>
+                                @endif
+                                @endif
                             </td>
                         </tr>
                     </table>
