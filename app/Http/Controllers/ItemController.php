@@ -80,7 +80,7 @@ class ItemController extends Controller {
             // Permanent Requirement
             'location_id' => 'required|exists:locations,id',
             // Conditional Requirements
-            'location' => 'required_if:trackable,No|nullable|string|max:255',
+//            'location' => 'required_if:trackable,No|nullable|string|max:255',
             'cabinet_id' => 'required_if:trackable,Yes|nullable|exists:cabinets,id',
             'drawer_id' => 'required_if:trackable,Yes|nullable|exists:drawers,id',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -94,9 +94,6 @@ class ItemController extends Controller {
             // If not trackable, we only keep location text; clear the IDs
             $input['cabinet_id'] = null;
             $input['drawer_id'] = null;
-        } else {
-            // If trackable, we use Cabinet/Drawer; clear the manual text
-            $input['location'] = null;
         }
 
         // 3. Image Uploading
@@ -167,7 +164,7 @@ class ItemController extends Controller {
             // Permanent Requirement
             'location_id' => 'required|exists:locations,id',
             // Conditional Requirements
-            'location' => 'required_if:trackable,No|nullable|string|max:255',
+//            'location' => 'required_if:trackable,No|nullable|string|max:255',
             'cabinet_id' => 'required_if:trackable,Yes|nullable|exists:cabinets,id',
             'drawer_id' => 'required_if:trackable,Yes|nullable|exists:drawers,id',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -180,8 +177,6 @@ class ItemController extends Controller {
         if ($request->trackable === 'No') {
             $input['cabinet_id'] = null;
             $input['drawer_id'] = null;
-        } else {
-            $input['location'] = null;
         }
 
         // 3. Image Uploading
@@ -270,12 +265,6 @@ class ItemController extends Controller {
                                     $html .= ' <i class="fa fa-angle-right" style="margin:0 2px;"></i> ';
                                     $html .= '<span class="text-muted">' . e($item->drawer->title) . '</span>';
                                 }
-                            } else {
-                                // Manual Path: Site > General Text
-                                if ($item->location) {
-                                    $html .= ' <i class="fa fa-angle-right" style="margin:0 2px;"></i> ';
-                                    $html .= '<span class="text-muted"><em>' . e($item->location) . '</em></span>';
-                                }
                             }
 
                             return $html;
@@ -330,11 +319,6 @@ class ItemController extends Controller {
                                 if ($item->drawer) {
                                     $html .= ' <i class="fa fa-angle-right" style="margin:0 2px;"></i> ';
                                     $html .= '<span class="text-muted">' . e($item->drawer->title) . '</span>';
-                                }
-                            } else {
-                                if ($item->location) {
-                                    $html .= ' <i class="fa fa-angle-right" style="margin:0 2px;"></i> ';
-                                    $html .= '<span class="text-muted"><em>' . e($item->location) . '</em></span>';
                                 }
                             }
                             return $html;

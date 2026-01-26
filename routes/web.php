@@ -49,4 +49,16 @@ Route::group(['middleware' => 'auth'], function () {
 
     Route::get('api/cabinets-by-location/{id}', 'ItemController@getCabinets');
     Route::get('api/drawers-by-cabinet/{id}', 'ItemController@getDrawers');
+    
+    
+    //desks 
+    
+     Route::resource('desks', 'DeskController');
+    Route::get('apiDesks', 'DeskController@apiDesks')->name('api.desks');
+    
+    
+    Route::get('api/desk-details/{id}', 'DeskController@getDeskDetails');
+// Drawer Routes (Add these)
+    Route::post('deskparts', 'DeskController@storeDeskPart')->name('deskparts.store');
+    Route::delete('deskparts/{id}', 'DeskController@deleteDeskPart')->name('deskparts.destroy');
 });

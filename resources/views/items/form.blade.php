@@ -69,18 +69,12 @@
                                 <div class="form-group">
                                     <label>Trackable (Storage System?)</label>
                                     <select class="form-control" id="trackable" name="trackable">
-                                        <option value="No">No (Manual Location)</option>
+                                        <option value="No">No</option>
                                         <option value="Yes">Yes (Cabinet & Drawer)</option>
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-lg-12">
-                                <div id="location_group" class="form-group">
-                                    <label>General Location</label>
-                                    <input type="text" class="form-control" id="location" name="location" placeholder="e.g. Front Desk">
-                                </div>
-
-                            </div>
+                           
 
                             <div class="col-lg-12">
                                 <div id="storage_group" style="display:none;">

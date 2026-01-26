@@ -89,17 +89,15 @@
                     $('#trackable').on('change', function () {
                         if ($(this).val() === 'Yes') {
                             $('#storage_group').show();
-                            $('#location_group').hide();
-
                             // Set requirements for Trackable mode
                             $('#cabinet_id, #drawer_id').attr('required', 'required');
-                            $('#location').val('').removeAttr('required');
+                            
                         } else {
                             $('#storage_group').hide();
-                            $('#location_group').show();
+                          
 
                             // Set requirements for Manual mode
-                            $('#location').attr('required', 'required');
+                           
                             $('#cabinet_id, #drawer_id').val('').removeAttr('required');
                         }
                     });
@@ -182,7 +180,7 @@
                             $('#trackable').val(data.trackable).trigger('change');
 
                             if (data.trackable === 'No') {
-                                $('#location').val(data.location);
+//                              
                             } else {
                                 // Logic to load nested dropdowns sequentially for Edit
                                 if (data.location_id) {

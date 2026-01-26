@@ -26,18 +26,18 @@
             </li>
             <li class="{{ Request::routeIs('item-types.*') ? 'active' : '' }}">
                 <a href="{{ route('item-types.index') }}">
-                    <i class="fa fa-list"></i> <span>Category/Type</span>
+                    <i class="fa fa-list"></i> <span>Category</span>
                 </a>
             </li>
             <li class="{{ Request::routeIs('items.*') ? 'active' : '' }}">
                 <a href="{{ route('items.index') }}">
-                    <i class="fa fa-cubes"></i> <span>Items</span>
+                    <i class="fa fa-cubes"></i> <span>Item</span>
                 </a>
             </li>
 
             <li class="{{ Request::routeIs('locations.*') ? 'active' : '' }}">
                 <a href="{{ route('locations.index') }}">
-                    <i class="fa fa-map"></i> <span>Locations/Rooms</span>
+                    <i class="fa fa-map"></i> <span>Location</span>
                 </a>
             </li>
 
@@ -45,6 +45,11 @@
             <li class="{{ Request::routeIs('cabinets.*') ? 'active' : '' }}">
                 <a href="{{ route('cabinets.index') }}">
                     <i class="fa fa-cart-plus"></i> <span>Cabinets</span>
+                </a>
+            </li>
+            <li class="{{ Request::routeIs('desks.*') ? 'active' : '' }}">
+                <a href="{{ route('desks.index') }}">
+                    <i class="fa fa-table"></i> <span>Desks</span>
                 </a>
             </li>
             <hr/>
