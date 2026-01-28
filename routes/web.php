@@ -55,8 +55,6 @@ Route::group(['middleware' => 'auth'], function () {
     
      Route::resource('desks', 'DeskController');
     Route::get('apiDesks', 'DeskController@apiDesks')->name('api.desks');
-    
-    
     Route::get('api/desk-details/{id}', 'DeskController@getDeskDetails');
 // Drawer Routes (Add these)
     Route::post('deskparts', 'DeskController@storeDeskPart')->name('deskparts.store');
