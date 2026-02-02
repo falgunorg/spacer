@@ -74,7 +74,7 @@
                                     </select>
                                 </div>
                             </div>
-                           
+
 
                             <div class="col-lg-12">
                                 <div id="storage_group" style="display:none;">
@@ -112,7 +112,8 @@
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-danger pull-left" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success">Submit</button>
+                    <button type="submit" onclick="setPrint(true)" class="btn btn-warning">Submit & Print Label</button>
+                    <button type="submit" onclick="setPrint(false)" class="btn btn-success">Submit</button>
                 </div>
 
             </form>

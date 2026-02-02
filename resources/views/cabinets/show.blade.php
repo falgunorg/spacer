@@ -3,11 +3,79 @@
 @section('top')
 <link rel="stylesheet" href="{{ asset('assets/bower_components/datatables.net-bs/css/dataTables.bootstrap.min.css') }}">
 <style>
-    /* Styling to ensure the QR code fits nicely */
-    .qr-code-container svg {
-        width: 150px;
-        height: 150px;
-        margin-bottom: 10px;
+    .printable-area {
+        border: 1px solid #ddd;
+        padding: 10px;
+        background: #fff;
+    }
+    /* 2. THE CENTERING FIX FOR PRINTING */
+    @media print {
+        @page {
+            size: 45mm 35mm;
+            margin: 0 !important;
+        }
+
+        html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            height: 35mm !important;
+            width: 45mm !important;
+            overflow: hidden !important;
+            background-color: white;
+        }
+
+        body * {
+            visibility: hidden !important;
+        }
+
+        .printable-area, .printable-area * {
+            visibility: visible !important;
+        }
+
+        .printable-area {
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 45mm !important;
+            height: 35mm !important;
+            margin: 0 0 0 0  !important;
+            padding: 0 0 0 0 !important;
+            border: none !important;
+
+            /* PERFECT CENTERING */
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important; /* Vertical center */
+            align-items: center !important;     /* Horizontal center */
+        }
+
+        /* Target the div holding the QR code */
+        .printable-area div {
+            line-height: 0 !important; /* Removes bottom spacing from inline-block */
+            margin: 0 0 0 0 !important;
+            padding: 0 0 0 0 !important;
+        }
+
+        .printable-area svg {
+            width: 22mm !important; /* Increased slightly for clarity */
+            height: 22mm !important;
+            display: block !important;
+            margin: 11px auto 2px !important;
+        }
+
+        .printable-area p {
+            margin: 0 0 0 0 !important;
+            padding: 0 0 0 0 !important;
+            font-size: 11px !important;
+            font-weight: bold !important;
+            line-height: 0.8 !important; /* Tightens the text block */
+            text-align: center !important;
+            width: 100% !important;
+        }
+
+        .no-print {
+            display: none !important;
+        }
     }
 </style>
 @endsection
@@ -17,8 +85,19 @@
     <div class="col-md-3">
         <div class="box box-primary">
             <div class="box-body box-profile">
-                <div class="text-center qr-code-container">
-                    {!! $qrcode !!}
+                {{-- UPDATED WRAPPER FOR BETTER CENTERING --}}
+                <div class="text-center">
+                    <div class="printable-area">
+                        <div>
+                            {!! QrCode::size(90)->generate(Request::url()); !!}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="no-print text-center" style="margin-top: 20px;">
+                    <button onclick="window.print()" class="btn btn-success btn-block">
+                        <i class="fa fa-print"></i> PRINT TOKEN
+                    </button>
                 </div>
                 <h3 class="profile-username text-center">{{ $cabinet->title }}</h3>
                 <p class="text-muted text-center">Cabinet Detail</p>
@@ -249,5 +328,16 @@
                     }
 </script>
 
+
+<script>
+    // If the URL contains ?print=true, trigger print and then close/back
+    window.onload = function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('print')) {
+            window.print();
+            // Optional: close or redirect after printing
+        }
+    }
+</script>
 
 @endsection

@@ -66,11 +66,12 @@ class CabinetController extends Controller {
 
         $request['user_id'] = Auth::id();
 
-        Cabinet::create($request->all());
+        $cabinet = Cabinet::create($request->all());
 
         return response()->json([
                     'success' => true,
-                    'message' => 'Cabinet Created'
+                    'message' => 'Cabinet Created',
+                    'id' => $cabinet->id
         ]);
     }
 
@@ -133,7 +134,8 @@ class CabinetController extends Controller {
 
         return response()->json([
                     'success' => true,
-                    'message' => 'Cabinet Updated'
+                    'message' => 'Cabinet Updated',
+                    'id' => $cabinet->id
         ]);
     }
 
@@ -228,9 +230,10 @@ class CabinetController extends Controller {
                             return '<span class="label label-danger">No Location</span>';
                         })
                         ->addColumn('action', function ($cabinet) {
-                            // FIXED: Changed '+' to '.' for PHP string concatenation
                             return '<div class="">' .
                                     '<a href="' . route('cabinets.show', $cabinet->id) . '" class="btn btn-info btn-xs"><i class="glyphicon glyphicon-eye-open"></i></a> ' .
+                                    // NEW: Print Button
+                                    '<a onclick="printLabel(' . $cabinet->id . ')" class="btn btn-warning btn-xs"><i class="glyphicon glyphicon-print"></i></a> ' .
                                     '<a onclick="editForm(' . $cabinet->id . ')" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i> </a> ' .
                                     '<a onclick="deleteData(' . $cabinet->id . ')" class="btn btn-danger btn-xs"><i class="fa fa-trash"></i> </a>' .
                                     '</div>';

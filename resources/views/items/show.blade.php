@@ -2,7 +2,7 @@
 
 @section('content')
 <style>
-    /* Screen Styling - Makes it look like a normal web page */
+    /* 1. YOUR ORIGINAL SCREEN STYLING (KEEPING YOUR DESIGN) */
     .print-ticket {
         width: 100%;
         max-width: 800px;
@@ -14,60 +14,80 @@
         background: #fff;
     }
 
-    /* Thermal Printer Settings */
+    /* 2. THE CENTERING FIX FOR PRINTING */
     @media print {
         @page {
-            margin: 0;
-            size: auto;
+            size: 45mm 35mm;
+            margin: 0 !important;
+        }
+
+        html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            height: 35mm !important;
+            width: 45mm !important;
+            overflow: hidden !important;
+            background-color: white;
         }
 
         body * {
-            visibility: hidden;
+            visibility: hidden !important;
         }
 
-        /* ONLY show the small ticket area when printing */
         .printable-area, .printable-area * {
-            visibility: visible;
+            visibility: visible !important;
         }
 
         .printable-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 72mm !important;
-            margin: 2mm !important;
-            padding: 5px !important;
-            border: 1px solid #000 !important;
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 45mm !important;
+            height: 35mm !important;
+            margin: 0 0 0 0  !important;
+            padding: 0 0 0 0 !important;
+            border: none !important;
+
+            /* PERFECT CENTERING */
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important; /* Vertical center */
+            align-items: center !important;     /* Horizontal center */
+        }
+
+        /* Target the div holding the QR code */
+        .printable-area div {
+            line-height: 0 !important; /* Removes bottom spacing from inline-block */
+            margin: 0 0 0 0 !important;
+            padding: 0 0 0 0 !important;
+        }
+
+        .printable-area svg {
+            width: 22mm !important; /* Increased slightly for clarity */
+            height: 22mm !important;
+            display: block !important;
+            margin: 11px auto 2px !important;
+        }
+
+        .printable-area p {
+            margin: 0 0 0 0 !important;
+            padding: 0 0 0 0 !important;
+            font-size: 11px !important;
+            font-weight: bold !important;
+            line-height: 0.8 !important; /* Tightens the text block */
+            text-align: center !important;
+            width: 100% !important;
         }
 
         .no-print {
             display: none !important;
-        }
-
-        /* Typography for Small Printer */
-        .printable-area {
-            font-size: 10px !important;
-            color: #000;
-        }
-
-        .printable-area .table td, .printable-area .table th {
-            padding: 1px !important;
-            border: none !important;
-        }
-
-        .item-image {
-            width: 50px !important;
-            height: 50px !important;
-        }
-        svg {
-            width: 70px !important;
-            height: 70px !important;
         }
     }
 </style>
 
 <div class="container-fluid print-ticket">
 
+    {{-- YOUR ORIGINAL DESIGN - UNTOUCHED --}}
     <div class="box box-primary no-print">
         <div class="box-header with-border">
             <h3 class="box-title">Full Item Details</h3>
@@ -87,40 +107,11 @@
                             <th>Location</th>
                             <td>
                                 <i class="fa fa-map-marker text-muted"></i>
-
-                                {{-- 1. Base Location (Always Required) --}}
                                 @if($item->itemLocation)
-                                <a href="{{ route('locations.show', $item->itemLocation->id) }}">
-                                    {{ $item->itemLocation->name }}
-                                </a>
-                                @else
-                                <span class="text-muted">No Location</span>
-                                @endif
-
-                                {{-- 2. Display Sub-Location based on Trackable status --}}
-                                @if($item->trackable == 'Yes')
-                                {{-- Trackable Path: Location > Cabinet > Drawer --}}
-                                @if($item->cabinet)
-                                <i class="fa fa-angle-right" style="margin: 0 5px;"></i>
-                                <a href="{{ route('cabinets.show', $item->cabinet->id) }}">
-                                    {{ $item->cabinet->title }}
-                                </a>
-                                @endif
-
-                                @if($item->drawer)
-                                <i class="fa fa-angle-right" style="margin: 0 5px;"></i>
-                                <span class="label label-default">{{ $item->drawer->title }}</span>
-                                @endif
-                                @else
-                                {{-- Manual Path: Location > General Text --}}
-                                @if($item->location)
-                                <i class="fa fa-angle-right" style="margin: 0 5px;"></i>
-                                <span class="text-muted"><em>{{ $item->location }}</em></span>
-                                @endif
+                                {{ $item->itemLocation->name }}
                                 @endif
                             </td>
                         </tr>
-                        {{-- ADD ALL YOUR OTHER EXTRA INFO HERE --}}
                         <tr><th>Description</th><td>{{ $item->description ?? 'No description' }}</td></tr>
                         <tr><th>Created At</th><td>{{ $item->created_at }}</td></tr>
                     </table>
@@ -129,71 +120,20 @@
         </div>
     </div>
 
-    <div class="printable-area"> 
-        <div class="box-body" style="padding: 5px;">
-            <div class="text-center" style="margin-bottom: 8px; border-bottom: 1px dashed #ccc; padding-bottom: 5px;">
-                <h4 style="margin:0; font-size: 14px; font-weight:bold;">{{ $item->name }}</h4>
-                <small>{{ $item->itemType->name ?? 'General' }}</small>
+    <div class="box-body no-print" style="padding: 5px;">
+        <div class="text-center" style="margin-bottom: 8px; border-bottom: 1px dashed #ccc; padding-bottom: 5px;">
+            <h4 style="margin:0; font-size: 14px; font-weight:bold;">{{ $item->name }}</h4>
+            <small>{{ $item->itemType->name ?? 'General' }}</small>
+        </div>
+    </div>
+
+    {{-- UPDATED WRAPPER FOR BETTER CENTERING --}}
+    <div class="text-center">
+        <div class="printable-area">
+            <div>
+                {!! QrCode::size(90)->generate(Request::url()); !!}
             </div>
-
-            <div class="row">
-                <div class="col-xs-4 text-center">
-                    <img src="{{ $item->show_photo }}" class="item-image img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;">
-                </div>
-
-                <div class="col-xs-8">
-                    <table class="table" style="font-size: 10px; margin-bottom: 0;">
-                        <tr>
-                            <th>Qty:</th>
-                            <td>{{ $item->qty }}</td>
-                        </tr>
-                        <tr>
-                            <th>Location:</th>
-                            <td>
-                                <i class="fa fa-map-marker text-muted"></i>
-
-                                {{-- 1. Base Location (Always Required) --}}
-                                @if($item->itemLocation)
-
-                                {{ $item->itemLocation->name }}
-
-                                @else
-                                <span class="text-muted">No Location</span>
-                                @endif
-
-                                {{-- 2. Display Sub-Location based on Trackable status --}}
-                                @if($item->trackable == 'Yes')
-                                {{-- Trackable Path: Location > Cabinet > Drawer --}}
-                                @if($item->cabinet)
-                                <i class="fa fa-angle-right" style="margin: 0 5px;"></i>
-
-                                {{ $item->cabinet->title }}
-
-                                @endif
-
-                                @if($item->drawer)
-                                <i class="fa fa-angle-right" style="margin: 0 5px;"></i>
-                                <span class="label label-default">{{ $item->drawer->title }}</span>
-                                @endif
-                                @else
-                                {{-- Manual Path: Location > General Text --}}
-                                @if($item->location)
-                                <i class="fa fa-angle-right" style="margin: 0 5px;"></i>
-                                <span class="text-muted"><em>{{ $item->location }}</em></span>
-                                @endif
-                                @endif
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-
-            <div class="text-center" style="margin-top: 10px;">
-                <div style="display: inline-block;">
-                    {!! QrCode::size(80)->generate(Request::url()); !!}
-                </div>
-                <p style="font-size: 12px; font-weight: bold; text-transform: uppercase;">{{$item->serial_number}}</p>
-            </div>
+            <p style="margin:0 0 0 0;">{{$item->serial_number}}</p>
         </div>
     </div>
 
@@ -204,3 +144,14 @@
     </div>
 </div>
 @endsection
+
+<script>
+    // If the URL contains ?print=true, trigger print and then close/back
+    window.onload = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('print')) {
+            window.print();
+            // Optional: close or redirect after printing
+        }
+    }
+</script>

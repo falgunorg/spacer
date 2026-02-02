@@ -10,7 +10,6 @@
         <div class="box-header with-border">
             <h3 class="box-title">Inventory Token List</h3>
         </div>
-
         <div class="box-body">
             <form action="{{ route('tokens') }}" method="GET" class="form-inline">
                 <input type="text" name="search" class="form-control" placeholder="Search Name or Serial..." value="{{ request('search') }}">

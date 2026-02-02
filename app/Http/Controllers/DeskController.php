@@ -66,11 +66,12 @@ class DeskController extends Controller {
 
         $request['user_id'] = Auth::id();
 
-        Desk::create($request->all());
+        $desk = Desk::create($request->all());
 
         return response()->json([
                     'success' => true,
-                    'message' => 'Desk Created'
+                    'message' => 'Desk Created',
+                    'id' => $desk->id
         ]);
     }
 
@@ -133,7 +134,8 @@ class DeskController extends Controller {
 
         return response()->json([
                     'success' => true,
-                    'message' => 'Desk Updated'
+                    'message' => 'Desk Updated',
+                    'id' => $desk->id
         ]);
     }
 
@@ -231,6 +233,7 @@ class DeskController extends Controller {
                             // FIXED: Changed '+' to '.' for PHP string concatenation
                             return '<div class="">' .
                                     '<a href="' . route('desks.show', $desk->id) . '" class="btn btn-info btn-xs"><i class="glyphicon glyphicon-eye-open"></i></a> ' .
+                                    '<a onclick="printLabel(' . $desk->id . ')" class="btn btn-warning btn-xs"><i class="glyphicon glyphicon-print"></i></a> ' .
                                     '<a onclick="editForm(' . $desk->id . ')" class="btn btn-primary btn-xs"><i class="fa fa-edit"></i> </a> ' .
                                     '<a onclick="deleteData(' . $desk->id . ')" class="btn btn-danger btn-xs"><i class="fa fa-trash"></i> </a>' .
                                     '</div>';

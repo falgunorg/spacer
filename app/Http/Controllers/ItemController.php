@@ -116,7 +116,8 @@ class ItemController extends Controller {
 
         return response()->json([
                     'success' => true,
-                    'message' => 'Item Created Successfully'
+                    'message' => 'Item Created Successfully',
+                    'id' => $item->id
         ]);
     }
 
@@ -207,7 +208,8 @@ class ItemController extends Controller {
 
         return response()->json([
                     'success' => true,
-                    'message' => 'Item Updated Successfully'
+                    'message' => 'Item Updated Successfully',
+                    'id' => $item->id
         ]);
     }
 
@@ -332,11 +334,24 @@ class ItemController extends Controller {
                         })
                         ->addColumn('action', function ($item) {
                             return '
-                <a href="' . route('items.show', $item->id) . '" class="btn btn-info btn-xs"><i class="glyphicon glyphicon-eye-open"></i></a>
-                <a onclick="editForm(' . $item->id . ')" class="btn btn-primary btn-xs"><i class="glyphicon glyphicon-edit"></i></a>
-                <a onclick="deleteData(' . $item->id . ')" class="btn btn-danger btn-xs"><i class="glyphicon glyphicon-trash"></i></a>
-            ';
+        <a href="' . route('items.show', $item->id) . '" class="btn btn-info btn-xs"><i class="glyphicon glyphicon-eye-open"></i></a>
+        <a onclick="printLabel(' . $item->id . ')" class="btn btn-warning btn-xs"><i class="glyphicon glyphicon-print"></i></a>
+        <a onclick="editForm(' . $item->id . ')" class="btn btn-primary btn-xs"><i class="glyphicon glyphicon-edit"></i></a>
+        <a onclick="deleteData(' . $item->id . ')" class="btn btn-danger btn-xs"><i class="glyphicon glyphicon-trash"></i></a>
+    ';
                         })
+
+
+
+
+
+//                        ->addColumn('action', function ($item) {
+//                            return '
+//                <a href="' . route('items.show', $item->id) . '" class="btn btn-info btn-xs"><i class="glyphicon glyphicon-eye-open"></i></a>
+//                <a onclick="editForm(' . $item->id . ')" class="btn btn-primary btn-xs"><i class="glyphicon glyphicon-edit"></i></a>
+//                <a onclick="deleteData(' . $item->id . ')" class="btn btn-danger btn-xs"><i class="glyphicon glyphicon-trash"></i></a>
+//            ';
+//                        })
                         // 3. Added 'item_type' to rawColumns in case you use labels/html
                         ->rawColumns(['show_photo', 'action', 'serial_number', 'location', 'item_type'])
                         ->make(true);

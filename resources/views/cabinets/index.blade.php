@@ -70,6 +70,31 @@
 <script src="{{ asset('assets/validator/validator.min.js') }}"></script>
 
 <script type="text/javascript">
+
+
+                var shouldPrint = false;
+
+                function setPrint(val) {
+                    shouldPrint = val;
+                }
+
+// Function to print without leaving the page
+                function printLabel(id) {
+                    var iframe = document.getElementById('printf');
+                    if (!iframe) {
+                        iframe = document.createElement('iframe');
+                        iframe.id = 'printf';
+                        iframe.style.display = 'none';
+                        document.body.appendChild(iframe);
+                    }
+
+                    // Point the iframe to your show page with a print flag
+                    iframe.src = "{{ url('cabinets') }}/" + id + "?print=true";
+                }
+
+
+
+
                 var table;
                 var save_method;
 
@@ -178,6 +203,9 @@
                                     $('#modal-form').modal('hide');
                                     table.ajax.reload();
                                     swal({title: 'Success!', text: data.message, type: 'success', timer: '1500'});
+                                    if (shouldPrint && data.id) {
+                                        printLabel(data.id);
+                                    }
                                 },
                                 error: function (data) {
                                     swal({title: 'Oops...', text: 'Check your input data', type: 'error'});
